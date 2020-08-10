@@ -11,7 +11,10 @@ This is the language specification for the programming language called \progLang
 
 \section{Basic datatypes}
 
-Variables storing whole numbers are one of the basic types of variables. These are divided into two categories. Unsigned variables can store whole numbers where the lowest valid number to store is 0 and have a explicit maximum number they can store that depends on how large the variable is. Signed variables can store whole numbers that range from a minimum negative value to a maximum positive value.
+\begin{itemize}
+\item integers - Integer variables stored whole numbers. These are divided into two categories. Unsigned variables can store whole numbers where the lowest valid number to store is 0 and have a explicit maximum number they can store that depends on how large the variable is. Signed variables can store whole numbers that range from a minimum negative value to a maximum positive value.
+\item floating point - Floating point variables store real numbers. Exact details of limitations of what values these can store depends on the precise representation used.
+\end{itemize}
 
 \subsection{Exact size variables}
 
@@ -28,6 +31,13 @@ Some variables are specified by indicating their exact size. Signed variables us
 \item sint32 - This is a signed integer that is 32 bits large. Valid values include $-2^{31}$ - $(2^{31} - 1)$.
 \item sint64 - This is a signed integer that is 64 bits large. Valid values include $-2^{63}$ - $(2^{63} - 1)$.
 \item sint128 - This is a signed integer that is 128 bits large. Valid values include $-2^{127}$ - $(2^{127} - 1)$.
+
+\item f8 - A floating point variable that is 8 bits large.
+\item f16 - A floating point variable that is 16 bits large.
+\item f32 - A floating point variable that is 32 bits large.
+\item f64 - A floating point variable that is 64 bits large.
+\item f128 - A floating point variable that is 128 bits large.
+
 \end{itemize}
 
 \subsection{Minimum size variables}
@@ -45,6 +55,11 @@ Some variables are specified by their minimum desired size. These variables may 
 \item sint32min - Signed integer with minimum width of 32 bits.
 \item sint64min - Signed integer with minimum width of 64 bits.
 \item sint128min - Signed integer with minimum width of 128 bits.
+\item f8min - A floating point variable that is at least 8 bits large.
+\item f16min - A floating point variable that is at least 16 bits large.
+\item f32min - A floating point variable that is at least 32 bits large.
+\item f64min - A floating point variable that is at least 64 bits large.
+\item f128min - A floating point variable that is at least 128 bits large.
 \end{itemize}
 
 \subsection{Variable features}
@@ -56,6 +71,8 @@ Variables can include a variety of features that are either intrinsic to them or
 \item Single instruction load - This indicates that the variable can always be loaded from memory with a single cpu instruction. This also means that the entire variable can not be read with multiple instructions.
 \item Cache coherence - This variable is required to ensure cache coherence when the variable is stored to memory. One single core processors, this is very likely to not require any additional instructions at all.
 \item Compare and swap - This variable has a the standard compare and swap atomic operation available. This feature might not exist at all depending on the precise architectures that \progLangNameSpace is being compiled for.
+\item ieee754 - Applicable to floating point variables. This indicates that the variable used the ieee-754 standard for the representation of numbers.
+
 \end{itemize}
 
 
