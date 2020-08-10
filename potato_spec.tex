@@ -71,9 +71,28 @@ Variables can include a variety of features that are either intrinsic to them or
 \item Single instruction load - This indicates that the variable can always be loaded from memory with a single cpu instruction. This also means that the entire variable can not be read with multiple instructions.
 \item Cache coherence - This variable is required to ensure cache coherence when the variable is stored to memory. One single core processors, this is very likely to not require any additional instructions at all.
 \item Compare and swap - This variable has a the standard compare and swap atomic operation available. This feature might not exist at all depending on the precise architectures that \progLangNameSpace is being compiled for.
+\item Copy - The variable has an implementation that allows for it to be copied at will from one place to another.
 \item ieee754 - Applicable to floating point variables. This indicates that the variable used the ieee-754 standard for the representation of numbers.
-
 \end{itemize}
 
+\section{ Functions}
+
+Functions are a basic element of code. Functions have a return type, that is returned at the completion of the function. The compiler shall not make attempts to preventing functions from entering infinite loops. A non-halting function is not a guarantee of the \progLangNameSpace language. Functions may declare that they are a halting or non-returning function.
+
+\begin{itemize}
+\item A variable. A function can return a specific value of a variable.
+\item Variable address. A function can return the address of a variable.
+\item Nothing. A function can not return at all. This can be achieved by ending in an infinite loop.
+\end{itemize}
+
+\section { Operations }
+Various operations can be performed on variables and with variables.
+\begin{itemize}
+\item Add - Two variables can be added together.
+\item Subtract - Subtract one variable from another one.
+\item Multiply - Multiply two variables together.
+\item Divide - Divide one variable with another variable.
+\item Assign - assign the value of one variable to another variable.
+\end{itemize}
 
 \end{document}
