@@ -1,0 +1,62 @@
+\documentclass[12pt]{article}
+\usepackage{lingmacros}
+\usepackage{tree-dvips}
+
+\newcommand{\progLangNameSpace}{Potato }
+\newcommand{\progLangName}{Potato}
+
+\begin{document}
+
+This is the language specification for the programming language called \progLangName .
+
+\section{Basic datatypes}
+
+Variables storing whole numbers are one of the basic types of variables. These are divided into two categories. Unsigned variables can store whole numbers where the lowest valid number to store is 0 and have a explicit maximum number they can store that depends on how large the variable is. Signed variables can store whole numbers that range from a minimum negative value to a maximum positive value.
+
+\subsection{Exact size variables}
+
+Some variables are specified by indicating their exact size. Signed variables use twos complement to represent negative values.
+\begin{itemize}
+\item uint8 - This is an unsigned integer that is 8 bits large. Valid values include 0 - $(2^8 - 1)$.
+\item uint16 - This is an unsigned integer that is 16 bits large. Valid values include 0 - $(2^{16} - 1)$.
+\item uint32 - This is an unsigned integer that is 32 bits large. Valid values include 0 - $(2^{32} - 1)$.
+\item uint64 - This is an unsigned integer that is 64 bits large. Valid values include 0 - $(2^{64} - 1)$.
+\item uint128 - This is an unsigned integer that is 128 bits large. Valid values include 0 - $(2^{128} - 1)$.
+
+\item sint8 - This is a signed integer that is 8 bits large. Valid values include $-2^7$ - $(2^7 - 1)$.
+\item sint16 - This is a signed integer that is 16 bits large. Valid values include $-2^{15}$ - $(2^{15} - 1)$.
+\item sint32 - This is a signed integer that is 32 bits large. Valid values include $-2^{31}$ - $(2^{31} - 1)$.
+\item sint64 - This is a signed integer that is 64 bits large. Valid values include $-2^{63}$ - $(2^{63} - 1)$.
+\item sint128 - This is a signed integer that is 128 bits large. Valid values include $-2^{127}$ - $(2^{127} - 1)$.
+\end{itemize}
+
+\subsection{Minimum size variables}
+
+Some variables are specified by their minimum desired size. These variables may be increased in size for a variety of reasons, one of which might include optimizations for speed for code size.
+
+\begin{itemize}
+\item uint8min - Unsigned integer with minimum width of 8 bits.
+\item uint16min - Unsigned integer with minimum width of 16 bits.
+\item uint32min - Unsigned integer with minimum width of 32 bits.
+\item uint64min - Unsigned integer with minimum width of 64 bits.
+\item uint128min - Unsigned integer with minimum width of 128 bits.
+\item sint8min - Signed integer with minimum width of 8 bits.
+\item sint16min - Signed integer with minimum width of 16 bits.
+\item sint32min - Signed integer with minimum width of 32 bits.
+\item sint64min - Signed integer with minimum width of 64 bits.
+\item sint128min - Signed integer with minimum width of 128 bits.
+\end{itemize}
+
+\subsection{Variable features}
+
+Variables can include a variety of features that are either intrinsic to them or requested. These features will vary depending on the precise architecture that \progLangNameSpace is being compiled for.
+
+\begin{itemize}
+\item Single instruction store - This indicates that the variable can always be stored to memory with a single cpu instruction. This also means that the variable cannot be partially written or written with multiple instructions.
+\item Single instruction load - This indicates that the variable can always be loaded from memory with a single cpu instruction. This also means that the entire variable can not be read with multiple instructions.
+\item Cache coherence - This variable is required to ensure cache coherence when the variable is stored to memory. One single core processors, this is very likely to not require any additional instructions at all.
+\item Compare and swap - This variable has a the standard compare and swap atomic operation available. This feature might not exist at all depending on the precise architectures that \progLangNameSpace is being compiled for.
+\end{itemize}
+
+
+\end{document}
