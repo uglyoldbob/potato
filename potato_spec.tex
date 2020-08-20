@@ -2,7 +2,7 @@
 \usepackage{lingmacros}
 \usepackage{tree-dvips}
 
-\newcommand{\progLangNameSpace}{Potato }
+\newcommand{\progLangNameSpace}{Potato\space }
 \newcommand{\progLangName}{Potato}
 
 \begin{document}
@@ -20,23 +20,23 @@ This is the language specification for the programming language called \progLang
 
 Some variables are specified by indicating their exact size. Signed variables use twos complement to represent negative values.
 \begin{itemize}
-\item uint8 - This is an unsigned integer that is 8 bits large. Valid values include 0 - $(2^8 - 1)$.
-\item uint16 - This is an unsigned integer that is 16 bits large. Valid values include 0 - $(2^{16} - 1)$.
-\item uint32 - This is an unsigned integer that is 32 bits large. Valid values include 0 - $(2^{32} - 1)$.
-\item uint64 - This is an unsigned integer that is 64 bits large. Valid values include 0 - $(2^{64} - 1)$.
-\item uint128 - This is an unsigned integer that is 128 bits large. Valid values include 0 - $(2^{128} - 1)$.
+\item uint8 - This is an unsigned integer that is 8 bits wide. Valid values include 0 - $(2^8 - 1)$.
+\item uint16 - This is an unsigned integer that is 16 bits wide. Valid values include 0 - $(2^{16} - 1)$.
+\item uint32 - This is an unsigned integer that is 32 bits wide. Valid values include 0 - $(2^{32} - 1)$.
+\item uint64 - This is an unsigned integer that is 64 bits wide. Valid values include 0 - $(2^{64} - 1)$.
+\item uint128 - This is an unsigned integer that is 128 bits wide. Valid values include 0 - $(2^{128} - 1)$.
 
-\item sint8 - This is a signed integer that is 8 bits large. Valid values include $-2^7$ - $(2^7 - 1)$.
-\item sint16 - This is a signed integer that is 16 bits large. Valid values include $-2^{15}$ - $(2^{15} - 1)$.
-\item sint32 - This is a signed integer that is 32 bits large. Valid values include $-2^{31}$ - $(2^{31} - 1)$.
-\item sint64 - This is a signed integer that is 64 bits large. Valid values include $-2^{63}$ - $(2^{63} - 1)$.
-\item sint128 - This is a signed integer that is 128 bits large. Valid values include $-2^{127}$ - $(2^{127} - 1)$.
+\item sint8 - This is a signed integer that is 8 bits wide. Valid values include $-2^7$ - $(2^7 - 1)$.
+\item sint16 - This is a signed integer that is 16 bits wide. Valid values include $-2^{15}$ - $(2^{15} - 1)$.
+\item sint32 - This is a signed integer that is 32 bits wide. Valid values include $-2^{31}$ - $(2^{31} - 1)$.
+\item sint64 - This is a signed integer that is 64 bits wide. Valid values include $-2^{63}$ - $(2^{63} - 1)$.
+\item sint128 - This is a signed integer that is 128 bits wide. Valid values include $-2^{127}$ - $(2^{127} - 1)$.
 
-\item f8 - A floating point variable that is 8 bits large.
-\item f16 - A floating point variable that is 16 bits large.
-\item f32 - A floating point variable that is 32 bits large.
-\item f64 - A floating point variable that is 64 bits large.
-\item f128 - A floating point variable that is 128 bits large.
+\item f8 - A floating point variable that is 8 bits wide.
+\item f16 - A floating point variable that is 16 bits wide.
+\item f32 - A floating point variable that is 32 bits wide.
+\item f64 - A floating point variable that is 64 bits wide.
+\item f128 - A floating point variable that is 128 bits wide.
 
 \end{itemize}
 
@@ -55,11 +55,11 @@ Some variables are specified by their minimum desired size. These variables may 
 \item sint32min - Signed integer with minimum width of 32 bits.
 \item sint64min - Signed integer with minimum width of 64 bits.
 \item sint128min - Signed integer with minimum width of 128 bits.
-\item f8min - A floating point variable that is at least 8 bits large.
-\item f16min - A floating point variable that is at least 16 bits large.
-\item f32min - A floating point variable that is at least 32 bits large.
-\item f64min - A floating point variable that is at least 64 bits large.
-\item f128min - A floating point variable that is at least 128 bits large.
+\item f8min - A floating point variable that is at least 8 bits wide.
+\item f16min - A floating point variable that is at least 16 bits wide.
+\item f32min - A floating point variable that is at least 32 bits wide.
+\item f64min - A floating point variable that is at least 64 bits wide.
+\item f128min - A floating point variable that is at least 128 bits wide.
 \end{itemize}
 
 \subsection{Variable features}
@@ -73,7 +73,18 @@ Variables can include a variety of features that are either intrinsic to them or
 \item Compare and swap - This variable has a the standard compare and swap atomic operation available. This feature might not exist at all depending on the precise architectures that \progLangNameSpace is being compiled for.
 \item Copy - The variable has an implementation that allows for it to be copied at will from one place to another.
 \item ieee754 - Applicable to floating point variables. This indicates that the variable used the ieee-754 standard for the representation of numbers.
+\item Always read - Read instructions for this variable should not be optimized out.
+\item Always write - Write instructions for this variable should not be optimized out.
+\item Device - Strong ordering is required for this variable with respect to other device variables.
 \end{itemize}
+
+\subsection {Owner}
+
+Variables have a compile-time defined owner. This drives much of the compile time error checking implemented within the \progLangNameSpace language.
+
+\subsection {Ordering blocks}
+
+Ordering blocks are defined, which define how instructions in a specific block of code should be ordered.
 
 \section{ Functions}
 
@@ -94,5 +105,91 @@ Various operations can be performed on variables and with variables.
 \item Divide - Divide one variable with another variable.
 \item Assign - assign the value of one variable to another variable.
 \end{itemize}
+
+\section {Memory mapped IO addresses}
+
+Memory mapped IO addresses can have a variety of interesting characteristics.
+
+\begin{itemize}
+\item It is possible to read a different value every time the address is read.
+\item Some addresses might be read-only.
+\item Some addresses might be write-only.
+\item Writing the same value multiple times might do something different than writing the value only once.
+\end{itemize}
+
+\section {Variable type specifiers}
+
+Variables can have a variety of modifiers that determines access of the variable.
+\begin {itemize}
+\item Const - The value will not change at all. Potentially everybody has read access to this value.
+\item Read-only - The holder of this value cannot change the value, but it might change.
+\item Normal - The holder of this value has exclusive access and nobody else has any access at all.
+\item Free-for-all - Everybody can modify the value at any time.
+\item Announce - The holder of this value can read and write the value, everybody else can read the value but not change it.
+\item Incoherent - The value cannot be written, reading it would potentially yield invalid results.
+\end {itemize}
+
+\section {User defined variables}
+The \progLangNameSpace language supports user defined variables.
+
+
+\subsection {structures}
+User defined structures contain zero or more variables. Padding elements may be inserted between elements as required to improve performance based on alignment. \progLangNameSpace provides a method for users to eliminate this padding between elements. Structures may also have an alignment requirement imposed on their initial storage address by the user.
+
+\subsubsection { Available specifiers }
+
+There are a variety of specifiers that are available to adjust a structure.
+
+\begin{itemize}
+\item No global - This prevents a global instance of the structure from being defined.
+\item Must place - This restricts creation of the structure to being placed directly at a memory address.
+\item Borrow-split - Individual members of the structure can be borrowed out of the structure independently.
+\item Stationary - This prevents moving the structure.
+\end{itemize}
+
+\subsubsection { Accessibility of member variables of a structure }
+
+Accessibility of member variables can be limited in access to code in unrelated functions.
+\begin{itemize}
+\item read - Read access can be granted to member variables.
+\item write - Write access can be granted to member variables.
+\end{itemize}
+
+\section {Syntax}
+
+\subsection {Variable creation}
+
+Variables can be created in the global scope or in the scope of a function as a local variable.
+
+create \textless qualifier\textgreater  \space \textless type\textgreater \space named \textless name\textgreater;
+
+create \textless qualifier\textgreater  \space \textless type\textgreater \space named \textless name1\textgreater , \textless name2\textgreater , \textless name3\textgreater;
+
+create \textless qualifier\textgreater  \space \textless type\textgreater \space named \textless name\textgreater with ( \textless values \textgreater );
+
+create \textless qualifier\textgreater  \space \textless type\textgreater \space named \textless name1\textgreater \space  with ( \textless values \textgreater ), \textless name2\textgreater \space  with ( \textless values \textgreater ), \textless name3\textgreater \space  with ( \textless values \textgreater );
+
+create \textless qualifier\textgreater \space \textless type\textgreater \space [ ] named \textless name\textgreater;
+
+create \textless qualifier\textgreater \space \textless type\textgreater \space [ ] named \textless name\textgreater [\textless number\textgreater] with [ ( \textless values \textgreater ) ];
+
+create \textless qualifier\textgreater \space \textless type\textgreater \space [ ] named \textless name1\textgreater [\textless number\textgreater] with [ ( \textless values \textgreater ) ], \textless name2\textgreater [\textless number\textgreater] with [ ( \textless values \textgreater ) ];
+
+create \textless qualifier\textgreater  \space \textless type\textgreater \space named \textless name\textgreater with ( \textless values \textgreater ) loaded from \textless section\textgreater;
+
+create \textless qualifier\textgreater  \space \textless type\textgreater \space named \textless name\textgreater with \textless value \textgreater;
+
+create \textless qualifier\textgreater \space \textless type\textgreater \space [ ] named \textless name\textgreater [\textless number\textgreater] with [ ( \textless values \textgreater ) ] loaded from \textless section\textgreater;
+
+\subsection {Function definitions}
+Functions are defined in the global scope.
+
+define function \textless name\textgreater (\textless arguments\textgreater) returns \textless qualifier\textgreater \space \textless type\textgreater \{ \textless stuff\textgreater \}
+
+define method \textless name\textgreater \space for \textless qualifier\textgreater  \space \textless type\textgreater \space named  \textless name\textgreater \space  (\textless arguments\textgreater) returns \textless qualifier\textgreater \space \textless type\textgreater \{ \textless stuff\textgreater \}
+
+\section {Interrupt context functions}
+
+Some functions are run directly by the underlying hardware as an interrupt handler. Interrupt context functions can only use other functions that are defined as interrupt context functions. These functions are limited in what they can do.
 
 \end{document}
