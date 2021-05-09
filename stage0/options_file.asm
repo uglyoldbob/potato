@@ -14,6 +14,16 @@ open_file:
 	int 80h
 	ret
 
+get_filesize:
+	mov ebx, eax
+	mov eax, 6Ch
+	mov ecx, esp
+	sub ecx, 88
+	int 80h
+	mov eax, [esp-68]
+.fs_check:
+	ret
+
 close_file:
 	mov ebx, eax
 	mov eax, 6
@@ -39,7 +49,8 @@ process_options_file:
 	jmp .done
 .file_processing:
 	push eax
-
+	mov eax, [esp]
+	call get_filesize
 	pop eax
 	call close_file
 .done:
