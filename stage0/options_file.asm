@@ -30,6 +30,9 @@ close_file:
 	int 80h
 	ret
 
+process_options_file_byte:
+	ret
+
 process_options_file:
 	push eax
 	mov eax, process_options_msg
@@ -51,6 +54,24 @@ process_options_file:
 	push eax
 	mov eax, [esp]
 	call get_filesize
+	mov ecx, eax
+.file_data_loop:
+	push ecx
+
+	;read a byte from the file
+	;TODO: read more than one byte at a time, still parse one byte at a time.
+	mov edx, 1
+	mov ebx, [esp+4]
+	mov ecx, esp
+	sub ecx, 1
+	mov eax, 3
+	int 80h
+	mov eax, 0
+	mov bl, [esp-1]
+	call process_options_file_byte	
+	pop ecx
+	loop .file_data_loop
+
 	pop eax
 	call close_file
 .done:
