@@ -1,3 +1,4 @@
+%include 'memory_inc.asm'
 %include 'string_funcs.asm'
 %include 'options_file.asm'
 
@@ -35,6 +36,7 @@ _start:
 	jmp .nextArg
 .doneWithArgs:
 
+	call setup_memory_alloc
 	cmp dword [number_arguments], 1
 	jne .have_some_arguments
 	mov eax, msg_usage

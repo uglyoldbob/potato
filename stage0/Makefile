@@ -8,7 +8,9 @@ clean: ${OBJS}
 %.d: %.asm
 	nasm -MT "$(basename $<).o $(basename $<).d" -M $< > $@
 
-sources = main.asm
+sources = \
+	main.asm \
+	memory.asm
 include $(sources:.asm=.d)
 
 %.o: %.asm
