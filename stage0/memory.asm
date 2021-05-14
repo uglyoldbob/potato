@@ -7,22 +7,166 @@ total_space dd 0
 ;andis a single contiguous regionof memory
 start_dynamic_allocation dd 0
 
-;previous block address (0 if none)
-;next block address (0 if none)
-;flags
-;size of the data block
-;(the block of data)
+;definition of the data structure used in memory allocation
+struc memblock
+.prev: resd 1	;0 if none
+.next: resd 1	;0 if none
+.addr: resd 1	;only valid when used flag set
+.flags: resd 1	;bits:(0)used,(others)reserved
+.size: resd 1	;the size of the block in bytes
+.block: resd 1	;the start of data
+endstruc
 
 ;block flags
 ;1 = block is free data
 
-
 section .bss
 
 
+;make sure these match (2^12 = 4096, 2^13=8192, etc)
+NUMBER_BITS_MIN_REQUEST EQU 12
 MINIMUM_REQUEST_SIZE EQU 4096
 
+NUMBER_BITS_ALLOC EQU 3
+ALLOC_SIZE_ALIGN EQU 8
+
 section .text
+
+;increase eax until it is divisible by 8
+size_up_to_8:
+	dec eax
+	shr eax, NUMBER_BITS_ALLOC
+	inc eax
+	shl eax, NUMBER_BITS_ALLOC
+	ret
+
+size_up_additional_request:
+	dec eax
+	shr eax, NUMBER_BITS_MIN_REQUEST
+	inc eax
+	shl eax, NUMBER_BITS_MIN_REQUEST
+	ret
+
+global memory_alloc
+;eax = amount of memory requested
+memory_alloc:
+	push ebx
+	call size_up_to_8
+	sub esp, 12
+	mov dword [esp], eax	;size requested
+	mov dword [esp+4], 0FFFFFFFFh ;smallest size found so far
+	mov dword [esp+8], 0 ;record associated with smallest size
+	;start the search
+	mov eax, [start_dynamic_allocation]
+.check_this_block:
+	mov ebx, [eax+memblock.flags]
+	test ebx, 1
+	jnz .next_block
+.unused_block:
+	mov ebx, [eax+memblock.size] ;block size
+	cmp ebx, [esp]
+	jl .next_block
+.block_is_large_enough:
+	cmp ebx, [esp+4]
+	jge .next_block
+.the_smallest_suitable_block:
+	mov [esp+4], ebx
+	mov [esp+8], eax
+.next_block: ;advance to the next block, if it is present
+	mov ebx, [eax+memblock.next]
+	cmp ebx, 0
+	je .no_more_blocks
+	mov eax, ebx
+	jmp .check_this_block
+.no_more_blocks:
+	cmp dword [esp+4], 0FFFFFFFFH
+	je .not_enough_space
+.there_is_space:
+	mov eax, [esp+8]
+	mov ebx, [esp]
+	call mem_use_block
+	add esp, 12
+	mov ebx, [esp+4]
+	mov [eax+memblock.addr], ebx
+	mov eax, [eax+memblock.block]
+	pop ebx
+	ret
+.not_enough_space:
+	mov eax, [eax+memblock.size] ;the size of the block
+	call request_more_memory
+	cmp eax, 0
+	jne .fail_alloc_more
+	call mem_use_block
+	add esp, 12
+	mov ebx, [esp+4]
+	mov [eax+memblock.addr], ebx
+	mov eax, [eax+memblock.block]
+	pop ebx
+	ret
+.fail_alloc_more:
+	add esp, 12
+	mov eax, 0
+	pop ebx
+	ret
+
+;uses the specified block
+;eax is the block
+;ebx is the amount of memory to use
+mem_use_block:
+	push ecx
+	mov ecx, [eax+memblock.size]
+	cmp ecx, ebx
+	jne .use_partial_block
+.use_entire_block:
+	or dword [eax+memblock.flags], 1
+	pop ecx
+	ret
+.use_partial_block:
+	sub ecx, ALLOC_SIZE_ALIGN+memblock.block
+	cmp ecx, ebx
+	jl .use_entire_block
+	push edx
+	mov edx, eax
+	add edx, ebx
+	add edx, memblock.block
+	mov [edx+memblock.prev], eax
+	mov ecx, [eax+memblock.next]
+	mov [edx+memblock.next], ecx
+	mov ecx, [eax+memblock.size]
+	mov [edx+memblock.size], ecx
+	sub [edx+memblock.size], ebx
+	sub dword [edx+memblock.size], memblock.block
+	sub [eax+memblock.size], ebx
+	sub dword [eax+memblock.size], memblock.block
+	mov [eax+memblock.next], edx
+	mov dword [edx+memblock.flags], 0
+	pop edx
+	pop ecx
+	ret
+
+request_more_memory:
+	push ebx
+	sub esp, 4
+	mov [esp], eax
+	mov ebx, [start_dynamic_allocation]
+	add ebx, [total_space]
+	add ebx, eax
+	mov eax, 45
+	int 80h
+	cmp eax, ebx
+	jne .fail
+	mov eax, [esp]
+	add [total_space], eax
+	mov eax, 0
+	add esp, 4
+	pop ebx
+	ret
+.fail:
+	mov eax, 1
+	add esp, 4
+	pop ebx
+	ret
+
 global setup_memory_alloc
 setup_memory_alloc:
 	;find end of data for start of heap
@@ -30,22 +174,20 @@ setup_memory_alloc:
 	mov ebx, 0
 	int 80h
 	mov [start_dynamic_allocation], eax
+	mov dword [total_space], 0
 	;request a small bit of memory to start
-	mov ebx, eax
-	add ebx, MINIMUM_REQUEST_SIZE
-	mov eax, 45
-	int 80h
-	;make sure it worked
-	cmp eax, ebx
+	mov eax, MINIMUM_REQUEST_SIZE
+	call request_more_memory
+	cmp eax, 0
 	jne .fail
-	add dword [total_space], MINIMUM_REQUEST_SIZE
 
 	;setup the initial structure with the newly requested memory
 	mov eax, start_dynamic_allocation
-	mov dword [eax], 0
-	mov dword [eax+4], 0
-	mov dword [eax+8], 1
-	mov dword [eax+12], MINIMUM_REQUEST_SIZE-12
+	mov dword [eax+memblock.prev], 0
+	mov dword [eax+memblock.next], 0
+	mov dword [eax+memblock.addr], 0
+	mov dword [eax+memblock.flags], 0
+	mov dword [eax+memblock.size], MINIMUM_REQUEST_SIZE-memblock.block
 	
 	jmp .notfail
 .fail:
