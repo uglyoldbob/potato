@@ -65,10 +65,10 @@ memory_alloc:
 .unused_block:
 	mov ebx, [eax+memblock.size] ;block size
 	cmp ebx, [esp]
-	jl .next_block
+	jb .next_block
 .block_is_large_enough:
 	cmp ebx, [esp+4]
-	jge .next_block
+	jae .next_block
 .the_smallest_suitable_block:
 	mov [esp+4], ebx
 	mov [esp+8], eax
@@ -124,7 +124,7 @@ mem_use_block:
 .use_partial_block:
 	sub ecx, ALLOC_SIZE_ALIGN+memblock.block
 	cmp ecx, ebx
-	jl .use_entire_block
+	jb .use_entire_block
 	push edx
 	mov edx, eax
 	add edx, ebx
@@ -182,7 +182,7 @@ setup_memory_alloc:
 	jne .fail
 
 	;setup the initial structure with the newly requested memory
-	mov eax, start_dynamic_allocation
+	mov eax, [start_dynamic_allocation]
 	mov dword [eax+memblock.prev], 0
 	mov dword [eax+memblock.next], 0
 	mov dword [eax+memblock.addr], 0

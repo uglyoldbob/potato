@@ -37,6 +37,8 @@ _start:
 .doneWithArgs:
 
 	call setup_memory_alloc
+	mov eax, 123
+	call memory_alloc
 	cmp dword [number_arguments], 1
 	jne .have_some_arguments
 	mov eax, msg_usage
