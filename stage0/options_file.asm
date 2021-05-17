@@ -5,6 +5,10 @@ OPTIONS_SIZE equ 64
 section .data
 process_options_msg db 'Loading options file:',0
 process_options_problem db 'There was a problem loading the options file.',0
+
+section .bss
+options_file_buffer: resd 1
+
 section .text
 
 open_file:
@@ -14,7 +18,43 @@ open_file:
 	int 80h
 	ret
 
+map_file:
+	push ebx
+	push ecx
+	push edx
+	push esi
+	push edi
+	push ebp
+	mov ebx, eax
+	call get_filesize
+	mov ecx, eax
+	mov edi, ebx
+	mov ebp, 0
+	mov eax, 192
+	mov ebx, 0
+	mov edx, 1
+	mov esi, 1
+	;addr, length, prot, flags, fd, offset
+	;
+	int 80h
+	pop ebp
+	pop edi
+	pop esi
+	pop edx
+	pop ecx
+	pop ebx
+	ret
+
+unmap_file:
+	mov ecx, ebx
+	mov ebx, eax
+	mov eax, 91
+	int 80h
+	ret
+
 get_filesize:
+	push ebx
+	push ecx
 	mov ebx, eax
 	mov eax, 6Ch
 	mov ecx, esp
@@ -22,6 +62,8 @@ get_filesize:
 	int 80h
 	mov eax, [esp-68]
 .fs_check:
+	pop ecx
+	pop ebx
 	ret
 
 close_file:
@@ -53,27 +95,26 @@ process_options_file:
 .file_processing:
 	push eax
 	mov eax, [esp]
+	call map_file
+	mov [options_file_buffer], eax
+	
+	mov eax, [esp]
 	call get_filesize
 	mov ecx, eax
 .file_data_loop:
 	push ecx
 
-	;read a byte from the file
-	;TODO: read more than one byte at a time, still parse one byte at a time.
-	mov edx, 1
-	mov ebx, [esp+4]
-	mov ecx, esp
-	sub ecx, 1
-	mov eax, 3
-	int 80h
-	mov eax, 0
-	mov bl, [esp-1]
+	;todo: get byte from the buffer
 	call process_options_file_byte	
 	pop ecx
 	loop .file_data_loop
-
-	pop eax
+	mov eax, [esp]
+	call get_filesize
+	mov ebx, eax
+	mov eax, [options_file_buffer]
+	call unmap_file
 	call close_file
+	pop eax
 .done:
 	pop eax
 	ret
