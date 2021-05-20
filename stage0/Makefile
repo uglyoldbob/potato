@@ -10,7 +10,8 @@ clean: ${OBJS}
 
 sources = \
 	main.asm \
-	memory.asm
+	memory.asm \
+	toml.asm
 include $(sources:.asm=.d)
 
 %.o: %.asm
