@@ -1,6 +1,9 @@
 %ifndef STRING_FUNCS_I
 %define STRING_FUNCS_I
 
+section .text
+
+global slen
 slen:
 	push ebx
 	mov ebx, eax
@@ -14,6 +17,7 @@ slen:
 	pop ebx
 	ret	
 
+global sprint
 sprint:
 	push edx
 	push ecx
@@ -34,6 +38,7 @@ sprint:
 	pop edx
 	ret
 
+global sprintLF
 sprintLF:
 	call sprint
 	push eax

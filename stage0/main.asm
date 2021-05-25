@@ -1,18 +1,18 @@
 %include 'memory_inc.asm'
-%include 'string_funcs.asm'
+%include 'string_funcs_inc.asm'
 %include 'options_file.asm'
+%include 'source_file_inc.asm'
 
 section .data
 msg1 db 'Potato compiler stage0', 0ah, 0
-msg_usage db 'Usage: <stage0> <things>', 0ah
-	  db '<things> - Required but currently unused argument.', 0ah
+msg_usage db 'Usage: <stage0> <filename>', 0ah
+	  db '<filename> - The filename to compile.', 0ah
 arg_index db 0 ;the index number of the argument being parsed
 number_arguments dd 0
-options_file_message db 'Using options file: ', 0
-options_filename db 'options',0
 
 section .bss
-options_struct: resb OPTIONS_SIZE
+source_struct: resb OPTIONS_SIZE
+filename: resd 1
 
 
 
@@ -30,7 +30,11 @@ _start:
 	cmp ecx, 0
 	jz .doneWithArgs
 	pop eax
+	cmp byte [arg_index], 1
+	jne .not_filename
+	mov [filename], eax
 	call sprintLF
+.not_filename:
 	dec ecx
 	inc byte [arg_index]
 	jmp .nextArg
@@ -43,19 +47,17 @@ _start:
 	jne .have_some_arguments
 	mov eax, msg_usage
 	call sprintLF
-	jmp .go
+	jmp .done
 .have_some_arguments:
-	jmp .go
-.go:
+	
 
-	mov eax, options_file_message
-	call sprint
-	mov eax, options_filename
-	call sprintLF	
-	mov eax, options_filename
-	mov ebx, options_struct
-	call process_options_file 
+	jmp .done
 
+	mov eax, [filename]
+	mov ebx, source_struct
+	call process_source_file 
+
+.done:
 	; return with status of eax
 	mov ebx, 0
 	mov eax, 1

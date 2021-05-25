@@ -1,23 +1,22 @@
 %include 'string_funcs_inc.asm'
 %include 'file_inc.asm'
 
-OPTIONS_SIZE equ 64
-
 section .data
-process_options_msg db 'Loading options file:',0
-process_options_problem db 'There was a problem loading the options file.',0
+process_source_msg db 'Loading potato source file:',0
+process_source_problem db 'There was a problem loading the potato source file.',0
 
 section .bss
-options_file_buffer: resd 1
+source_file_buffer: resd 1
 
 section .text
 
-process_options_file_byte:
+process_source_file_byte:
 	ret
 
-process_options_file:
+global process_source_file
+process_source_file:
 	push eax
-	mov eax, process_options_msg
+	mov eax, process_source_msg
 	call sprintLF
 
 	mov eax, [esp]
@@ -29,14 +28,14 @@ process_options_file:
 	jl .file_problem
 	jmp .file_processing
 .file_problem:
-	mov eax, process_options_problem
+	mov eax, process_source_problem
 	call sprintLF
 	jmp .done
 .file_processing:
 	push eax
 	mov eax, [esp]
 	call map_file
-	mov [options_file_buffer], eax
+	mov [source_file_buffer], eax
 	
 	mov eax, [esp]
 	call get_filesize
@@ -45,13 +44,13 @@ process_options_file:
 	push ecx
 
 	;todo: get byte from the buffer
-	call process_options_file_byte	
+	call process_source_file_byte
 	pop ecx
 	loop .file_data_loop
 	mov eax, [esp]
 	call get_filesize
 	mov ebx, eax
-	mov eax, [options_file_buffer]
+	mov eax, [source_file_buffer]
 	call unmap_file
 	call close_file
 	pop eax

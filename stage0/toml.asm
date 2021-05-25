@@ -15,7 +15,7 @@ endstruc
 
 ;this achieves the functionality of an enum
 ;the numbers here are used as bitflags (1<<toml_flags.xxxx)
-struct toml_flags
+struc toml_flags
 .comment: resb 1 ;the parser is in comment mode for now
 .quote1: resb 1 ;the parser is in single ' mode
 .quote2: resb 1 ;the parser is in single " mode

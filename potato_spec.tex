@@ -71,7 +71,7 @@ Variables can include a variety of features that are either intrinsic to them or
 \item Single instruction load - This indicates that the variable can always be loaded from memory with a single cpu instruction. This also means that the entire variable can not be read with multiple instructions.
 \item Cache coherence - This variable is required to ensure cache coherence when the variable is stored to memory. One single core processors, this is very likely to not require any additional instructions at all.
 \item Compare and swap - This variable has a the standard compare and swap atomic operation available. This feature might not exist at all depending on the precise architectures that \progLangNameSpace is being compiled for.
-\\item Copy - The variable has an implementation that allows for it to be copied at will from one place to another.
+\item Copy - The variable has an implementation that allows for it to be copied at will from one place to another.
 \item ieee754 - Applicable to floating point variables. This indicates that the variable used the ieee-754 standard for the representation of numbers.
 \item Always read - Read instructions for this variable should not be optimized out.
 \item Always write - Write instructions for this variable should not be optimized out.
@@ -126,7 +126,7 @@ The compiler shall not make attempts to preventing functions from entering infin
 A non-halting function is not a guarantee of the \progLangNameSpace language. 
 Functions may declare that they are a halting or non-returning function.
 A function may be declared as non-reentrant. This allows it to do some things that other functions would not be allowed to do.
-This will typically only be allowed for the entry function.
+This will typically only be for the entry function.
 
 \begin{itemize}
 \item A variable. A function can return a specific value of a variable.
