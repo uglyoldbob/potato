@@ -1,1 +1,3 @@
 extern elf_write_header
+extern elf_setup_header
+extern elf_header_size

@@ -14,7 +14,6 @@ struc memblock
 .addr: resd 1	;only valid when used flag set
 .flags: resd 1	;bits:(0)used,(others)reserved
 .size: resd 1	;the size of the block in bytes
-.block: resd 1	;the start of data
 endstruc
 
 ;block flags
@@ -88,7 +87,7 @@ memory_alloc:
 	add esp, 12
 	mov ebx, [esp+4]
 	mov [eax+memblock.addr], ebx
-	mov eax, [eax+memblock.block]
+	add eax, memblock_size
 	pop ebx
 	ret
 .not_enough_space:
@@ -100,7 +99,7 @@ memory_alloc:
 	add esp, 12
 	mov ebx, [esp+4]
 	mov [eax+memblock.addr], ebx
-	mov eax, [eax+memblock.block]
+	add eax, memblock_size
 	pop ebx
 	ret
 .fail_alloc_more:
@@ -122,22 +121,24 @@ mem_use_block:
 	pop ecx
 	ret
 .use_partial_block:
-	sub ecx, ALLOC_SIZE_ALIGN+memblock.block
+	sub ecx, ALLOC_SIZE_ALIGN+memblock_size
 	cmp ecx, ebx
 	jb .use_entire_block
 	push edx
 	mov edx, eax
 	add edx, ebx
-	add edx, memblock.block
+	add edx, memblock_size
 	mov [edx+memblock.prev], eax
 	mov ecx, [eax+memblock.next]
 	mov [edx+memblock.next], ecx
 	mov ecx, [eax+memblock.size]
 	mov [edx+memblock.size], ecx
 	sub [edx+memblock.size], ebx
-	sub dword [edx+memblock.size], memblock.block
-	sub [eax+memblock.size], ebx
-	sub dword [eax+memblock.size], memblock.block
+	sub dword [edx+memblock.size], memblock_size
+	mov [eax+memblock.size], edx
+	or dword [eax+memblock.flags],1
+	sub dword [eax+memblock.size], eax
+	sub dword [eax+memblock.size],memblock_size
 	mov [eax+memblock.next], edx
 	mov dword [edx+memblock.flags], 0
 	pop edx
@@ -187,7 +188,7 @@ setup_memory_alloc:
 	mov dword [eax+memblock.next], 0
 	mov dword [eax+memblock.addr], 0
 	mov dword [eax+memblock.flags], 0
-	mov dword [eax+memblock.size], MINIMUM_REQUEST_SIZE-memblock.block
+	mov dword [eax+memblock.size], MINIMUM_REQUEST_SIZE-memblock_size
 	
 	jmp .notfail
 .fail:

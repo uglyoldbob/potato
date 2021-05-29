@@ -13,14 +13,13 @@ msg_usage db 'Usage: <stage0> <filename> <output>', 0ah
 arg_index db 0 ;the index number of the argument being parsed
 number_arguments dd 0
 
-teststr db 'this is a test of the file writer', 0ah
-teststrlen dd $ - teststr
-
 section .bss
 source_struct: resb OPTIONS_SIZE
 filename: resd 1
 objectname: resd 1
 objecthandle: resd 1
+
+elf_object: resd 1
 
 
 
@@ -74,12 +73,13 @@ _start:
 	call file_open_write
 	mov [objecthandle], eax
 
+	call elf_header_size
+	call memory_alloc
+	mov [elf_object], eax
+	call elf_setup_header
+
 	call elf_write_header
 
-	mov ebx, teststr
-	mov ecx, [teststrlen]
-	call file_put_data
-	
 	mov eax, [objecthandle]
 	call file_sync
 
