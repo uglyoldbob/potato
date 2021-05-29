@@ -2,6 +2,7 @@
 %include 'string_funcs_inc.asm'
 %include 'options_file.asm'
 %include 'source_file_inc.asm'
+%include 'object_elf_inc.asm'
 
 section .data
 msg1 db 'Potato compiler stage0', 0ah, 0
@@ -72,6 +73,8 @@ _start:
 	mov eax, [objectname]
 	call file_open_write
 	mov [objecthandle], eax
+
+	call elf_write_header
 
 	mov ebx, teststr
 	mov ecx, [teststrlen]
