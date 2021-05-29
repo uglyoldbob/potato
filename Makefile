@@ -1,16 +1,13 @@
 
-all: build/stage0/potato_stage0 build/stage1/potato_stage1
+all: build/stage0 build/stage1 build/stage0/potato_stage0 build/stage1/potato_stage1
 
 clean:
 	rm -rf build
 
-build:
-	mkdir -p build
-
-build/stage0: build
+build/stage0:
 	mkdir -p build/stage0
 
-build/stage1: build
+build/stage1:
 	mkdir -p build/stage1
 
 stage0_SRCS = \
@@ -30,8 +27,6 @@ build/stage0/%.d: stage0/%.asm
 
 stage0_OBJS := $(addsuffix .o,$(addprefix build/stage0/,$(basename $(stage0_SRCS))))
 
-$(stage0_OBJS): build/stage0
-
 build/stage0/potato_stage0: $(stage0_OBJS)
 	ld -m elf_i386 $^ -o'$@'
 
@@ -42,8 +37,6 @@ build/stage1/%.o: stage1/%.p0
 	build/stage0/potato_stage0 $< $@
 
 stage1_OBJS = $(addsuffix .o,$(addprefix build/stage1/,$(basename $(stage1_SRCS))))
-
-$(stage1_OBJS): build/stage1
 
 build/stage1/potato_stage1: build/stage0/potato_stage0
 
