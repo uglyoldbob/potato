@@ -2,6 +2,12 @@
 
 struc elfheader32
 .ident: resb 4
+.ident_class: resb 1
+.ident_data: resb 1
+.ident_version: resb 1
+.ident_osabi: resb 1
+.ident_osabiver: resb 1
+.ident_reserved: resb 7
 .type: resw 1
 .machine: resw 1
 .version: resd 1
@@ -17,6 +23,43 @@ struc elfheader32
 .shstrindx: resw 1
 endstruc
 
+;section header
+struc elf_sh32
+.name: resd 1
+.type: resd 1
+.flags: resd 1
+.addr: resd 1
+.offset: resd 1
+.size: resd 1
+.link: resd 1
+.info: resd 1
+.addralign: resd 1
+.entsize: resd 1
+endstruc
+
+struc elf_sym
+.name: resd 1
+.value: resd 1
+.size: resd 1
+.info: resd 1
+.other: resd 1
+.index: resd 1
+endstruc
+
+struc elf_rel
+.offset: resd 1
+.info: resd 1
+endstruc
+
+struc elf_rela
+.offset: resd 1
+.info: resd 1
+.addend: resd 1
+endstruc
+
+section .data
+padding1: times 64-elfheader32_size db 0
+
 section .text
 
 global elf_header_size
@@ -24,20 +67,55 @@ elf_header_size:
 	mov eax, elfheader32_size
 	ret
 
+;eax is the header address
 global elf_setup_header
 elf_setup_header:
-	mov dword [eax+elfheader32.ident], 07f454c46h
-
-	push ebx
+	mov dword [eax+elfheader32.ident], 0464c457fh
+	mov byte [eax+elfheader32.ident_class], 1
+	mov byte [eax+elfheader32.ident_data], 1
+	mov byte [eax+elfheader32.ident_version], 1
+	mov byte [eax+elfheader32.ident_osabi], 0
+	mov byte [eax+elfheader32.ident_osabiver], 0
+	push eax
+	push edi
 	push ecx
-	mov ebx, eax
-	mov ecx, elfheader32_size
-	call file_put_data
+	lea edi, [eax+elfheader32.ident_reserved]
+	mov eax, 0
+	mov ecx, 7
+	rep stosb
 	pop ecx
-	pop ebx
-
+	pop edi
+	pop eax
+	mov word [eax+elfheader32.type], 1
+	mov word [eax+elfheader32.machine], 3
+	mov dword [eax+elfheader32.version], 1
+	mov dword [eax+elfheader32.entry], 0
+	mov dword [eax+elfheader32.phoff], 0
+	mov dword [eax+elfheader32.shoff], 64
+	mov dword [eax+elfheader32.flags], 0
+	mov word [eax+elfheader32.ehsize], elfheader32_size
+	mov word [eax+elfheader32.phentsize], 0
+	mov word [eax+elfheader32.phnum], 0
+	mov word [eax+elfheader32.shentsize], elf_sh32_size
+	mov word [eax+elfheader32.shnum], 0
+	mov word [eax+elfheader32.shstrindx], 0
 	ret
 
+;eax is fd
+;ebx is the header address
 global elf_write_header
 elf_write_header:
+	push eax
+	push ebx
+	push ecx
+	mov ecx, elfheader32_size
+	call file_put_data
+	pop eax
+	push eax
+	mov ebx, padding1
+	mov ecx, 64-elfheader32_size
+	call file_put_data
+	pop eax
+	pop ecx
+	pop ebx
 	ret

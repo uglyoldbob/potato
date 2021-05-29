@@ -75,9 +75,12 @@ _start:
 
 	call elf_header_size
 	call memory_alloc
+.elf_start:
 	mov [elf_object], eax
 	call elf_setup_header
 
+	mov eax, [objecthandle]
+	mov ebx, [elf_object]
 	call elf_write_header
 
 	mov eax, [objecthandle]
@@ -86,6 +89,8 @@ _start:
 	mov eax, [objecthandle]
 	call file_close
 
+	mov eax, [elf_object]
+	call memory_unalloc
 
 .done:
 	; return with status of eax

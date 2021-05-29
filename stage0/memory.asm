@@ -46,6 +46,12 @@ size_up_additional_request:
 	shl eax, NUMBER_BITS_MIN_REQUEST
 	ret
 
+;eax is the address to release
+;todo: do this
+global memory_unalloc
+memory_unalloc:
+	ret
+
 global memory_alloc
 ;eax = amount of memory requested
 memory_alloc:
