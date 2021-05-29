@@ -1,5 +1,8 @@
-extern open_file
-extern map_file
-extern unmap_file
-extern get_filesize
-extern close_file
+extern file_open
+extern file_map
+extern file_unmap
+extern file_getsize
+extern file_close
+extern file_open_write
+extern file_put_data
+extern file_sync

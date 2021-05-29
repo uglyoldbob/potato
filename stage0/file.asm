@@ -1,15 +1,60 @@
 section .text
 
-global open_file
-open_file:
-	mov ecx, 0
+global file_open
+file_open:
+	push ecx
+	push ebx
+	mov ecx, 0	;read
 	mov ebx, eax
 	mov eax, 5
 	int 80h
+	pop ebx
+	pop ecx
 	ret
 
-global map_file
-map_file:
+global file_open_write
+file_open_write:
+	push edx
+	push ecx
+	push ebx
+	mov ecx, 0q644
+	mov ebx, eax
+	mov eax, 8
+	int 80h
+	pop ebx
+	pop ecx
+	pop edx
+	ret
+
+global file_sync:
+file_sync:
+	push ebx
+	mov ebx, eax
+	mov eax, 118
+	int 80h
+	pop ebx
+	ret
+
+global file_put_data
+;eax = fd
+;ebx = buffer address
+;ecx = length
+file_put_data:
+	push edx
+	push ecx
+	push ebx
+	mov edx, ecx
+	mov ecx, ebx
+	mov ebx, eax
+	mov eax, 4
+	int 80h
+	pop ebx
+	pop ecx
+	pop edx
+	ret
+
+global file_map
+file_map:
 	push ebx
 	push ecx
 	push edx
@@ -17,7 +62,7 @@ map_file:
 	push edi
 	push ebp
 	mov ebx, eax
-	call get_filesize
+	call file_getsize
 	mov ecx, eax
 	mov edi, ebx
 	mov ebp, 0
@@ -36,16 +81,20 @@ map_file:
 	pop ebx
 	ret
 
-global unmap_file
-unmap_file:
+global file_unmap
+file_unmap:
+	push ecx
+	push ebx
 	mov ecx, ebx
 	mov ebx, eax
 	mov eax, 91
 	int 80h
+	pop ebx
+	pop ecx
 	ret
 
-global get_filesize
-get_filesize:
+global file_getsize
+file_getsize:
 	push ebx
 	push ecx
 	mov ebx, eax
@@ -59,9 +108,11 @@ get_filesize:
 	pop ebx
 	ret
 
-global close_file
-close_file:
+global file_close
+file_close:
+	push ebx
 	mov ebx, eax
 	mov eax, 6
 	int 80h
+	pop ebx
 	ret

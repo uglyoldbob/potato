@@ -23,7 +23,7 @@ process_source_file:
 	call sprintLF
 
 	mov eax, [esp]
-	call open_file
+	call file_open
 	cmp eax, 0
 	jl .file_problem
 	jmp .file_processing
@@ -34,11 +34,11 @@ process_source_file:
 .file_processing:
 	push eax
 	mov eax, [esp]
-	call map_file
+	call file_map
 	mov [source_file_buffer], eax
 	
 	mov eax, [esp]
-	call get_filesize
+	call file_getsize
 	mov ecx, eax
 .file_data_loop:
 	push ecx
@@ -48,11 +48,11 @@ process_source_file:
 	pop ecx
 	loop .file_data_loop
 	mov eax, [esp]
-	call get_filesize
+	call file_getsize
 	mov ebx, eax
 	mov eax, [source_file_buffer]
-	call unmap_file
-	call close_file
+	call file_unmap
+	call file_close
 	pop eax
 .done:
 	pop eax
