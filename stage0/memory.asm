@@ -50,6 +50,75 @@ size_up_additional_request:
 ;todo: do this
 global memory_unalloc
 memory_unalloc:
+	push ebx
+	;get the address of the block
+	sub eax, memblock_size
+	mov ebx, eax
+.verify_block_exists:
+	mov eax, [start_dynamic_allocation]
+.check_block:
+	cmp eax, ebx
+	je .block_found
+	cmp eax, 0
+	je .block_not_found
+	mov eax, [eax+memblock.next]
+	jmp .check_block	
+.block_found:
+	and dword [eax+memblock.flags], 0fffffffeh
+	;check for a previous block
+	cmp dword [eax+memblock.prev], 0
+	je .check_for_next
+	mov ebx, [eax+memblock.prev]
+	test dword [ebx+memblock.flags], 1
+	jnz .check_for_next
+	cmp dword [eax+memblock.next], 0
+	je .two_block_combine
+.three_block_combine:
+	push ecx
+	mov ecx, [eax+memblock.next]
+	mov [ebx+memblock.next], ecx
+	mov [ecx+memblock.prev], ebx
+	mov [ebx+memblock.size], ecx
+	sub [ebx+memblock.size], ebx
+	sub dword [ebx+memblock.size], memblock_size
+	pop ecx
+	jmp .check_for_next
+.two_block_combine:
+	mov dword [ebx+memblock.next], 0
+	mov eax, [eax+memblock.size]
+	add [ebx+memblock.size], eax
+	add dword [ebx+memblock.size], memblock_size
+.check_for_next:
+	;todo more stuff
+	mov ebx, [eax+memblock.next]
+	test dword [ebx+memblock.flags], 1
+	jnz .done
+	cmp dword [ebx+memblock.next], 0
+	je .two_block_merge
+.three_block_merge:
+	xchg eax, ebx
+	push ecx
+	mov ecx, [eax+memblock.next]
+	mov [ebx+memblock.next], ecx
+	mov [ecx+memblock.prev], ebx
+	mov [ebx+memblock.size], ecx
+	sub [ebx+memblock.size], ebx
+	sub dword [ebx+memblock.size], memblock_size
+	pop ecx
+	jmp .done
+.two_block_merge:
+	xchg eax, ebx
+	mov dword [ebx+memblock.next], 0
+	mov eax, [eax+memblock.size]
+	add [ebx+memblock.size], eax
+	add dword [ebx+memblock.size], memblock_size
+.done:
+	mov eax, 0
+	pop ebx
+	ret
+.block_not_found:
+	mov eax, 1
+	pop ebx
 	ret
 
 global memory_alloc

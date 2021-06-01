@@ -9,6 +9,7 @@ define memory_region
  echo Memory regions:\n
  set $block = (int)&start_dynamic_allocation
  set $i = 1
+ set $amount = 0
  printf "Total memory: %d\n", *(int)&total_space
  print /x $block
  set $block = *$block
@@ -19,7 +20,14 @@ define memory_region
  printf "\tAddr: 0x%x\n", *($block+8)
  printf "\tFlags: 0x%x\n", *($block+12)
  printf "\tSize: %d\n", *($block+16)
+ set $amount = $amount + *($block+16) + 20
  set $block = *($block+4)
  set $i = $i + 1
+ end
+ printf "Total bytes in sections: %d\n", $amount
+ if $amount == *(int)&total_space
+  printf "Memory amounts match\n"
+ else
+  printf "MEMORY AMOUNTS DO NOT MATCH!\n"
  end
 end
