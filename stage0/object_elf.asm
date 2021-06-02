@@ -1,4 +1,6 @@
+%include 'array_inc.asm'
 %include 'file_inc.asm'
+%include 'memory_inc.asm'
 
 struc elfheader32
 .ident: resb 4
@@ -24,6 +26,7 @@ struc elfheader32
 endstruc
 
 ;section header
+;the elf section header table is an array of this struc
 struc elf_sh32
 .name: resd 1
 .type: resd 1
@@ -57,19 +60,36 @@ struc elf_rela
 .addend: resd 1
 endstruc
 
+struc elf32_object
+.header: resb elfheader32_size
+.shtable: resb ARRAY_SIZE
+endstruc
+
 section .data
 padding1: times 64-elfheader32_size db 0
 
 section .text
+
+;create an elf32_object
+global elf32_object_create
+elf32_object_create:
+	mov eax, elf32_object_size
+	call memory_alloc
+	ret
+
+global elf32_object_destroy
+elf32_object_destroy:
+	ret
 
 global elf_header_size
 elf_header_size:
 	mov eax, elfheader32_size
 	ret
 
-;eax is the header address
+;eax is the elf32_object address
 global elf_setup_header
 elf_setup_header:
+	lea eax, [eax+elf32_object.header]
 	mov dword [eax+elfheader32.ident], 0464c457fh
 	mov byte [eax+elfheader32.ident_class], 1
 	mov byte [eax+elfheader32.ident_data], 1
@@ -102,10 +122,11 @@ elf_setup_header:
 	ret
 
 ;eax is fd
-;ebx is the header address
+;ebx is the elf32_object address
 global elf_write_header
 elf_write_header:
 	push eax
+	lea eax, [eax+elf32_object.header]
 	push ebx
 	push ecx
 	mov ecx, elfheader32_size
@@ -115,7 +136,26 @@ elf_write_header:
 	mov ebx, padding1
 	mov ecx, 64-elfheader32_size
 	call file_put_data
-	pop eax
 	pop ecx
 	pop ebx
+	pop eax
+	ret
+
+global elf_create_elf_sh32
+elf_create_elf_sh32:
+	push eax
+	mov eax, elf_sh32_size
+	call memory_alloc
+	mov ebx, eax
+	pop eax
+	
+	ret
+
+global elf_create_elf_sh32_list
+elf_create_elf_sh32_list:
+	call array_create
+	mov ebx, eax
+	call elf_create_elf_sh32
+	xchg eax, ebx
+	call array_append_item
 	ret

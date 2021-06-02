@@ -3,6 +3,7 @@
 %include 'options_file.asm'
 %include 'source_file_inc.asm'
 %include 'object_elf_inc.asm'
+%include 'array_inc.asm'
 
 section .data
 msg1 db 'Potato compiler stage0', 0ah, 0
@@ -19,9 +20,7 @@ filename: resd 1
 objectname: resd 1
 objecthandle: resd 1
 
-elf_object: resd 1
-
-
+elf32_object: resd 1
 
 section .text
 global _start
@@ -57,6 +56,7 @@ _start:
 	call setup_memory_alloc
 	mov eax, 123
 	call memory_alloc
+	call memory_unalloc
 	cmp dword [number_arguments], 3
 	je .have_some_arguments
 	mov eax, msg_usage
@@ -73,14 +73,12 @@ _start:
 	call file_open_write
 	mov [objecthandle], eax
 
-	call elf_header_size
-	call memory_alloc
-.elf_start:
-	mov [elf_object], eax
-	call elf_setup_header
+	call elf32_object_create
+	mov [elf32_object], eax
 
+	call elf_setup_header
 	mov eax, [objecthandle]
-	mov ebx, [elf_object]
+	mov ebx, [elf32_object]
 	call elf_write_header
 
 	mov eax, [objecthandle]
@@ -89,8 +87,8 @@ _start:
 	mov eax, [objecthandle]
 	call file_close
 
-	mov eax, [elf_object]
-	call memory_unalloc
+	mov eax, [elf32_object]
+	call elf32_object_destroy
 
 .done:
 	; return with status of eax

@@ -11,6 +11,7 @@ build/stage1:
 	mkdir -p build/stage1
 
 stage0_SRCS = \
+	array.asm \
 	main.asm \
 	memory.asm \
 	file.asm \
@@ -20,7 +21,7 @@ stage0_SRCS = \
 	toml.asm
 
 build/stage0/%.o: stage0/%.asm
-	nasm -i stage0 -f elf32 $< -o $@
+	nasm -w+all -i stage0 -f elf32 $< -o $@
 
 build/stage0/%.d: stage0/%.asm
 	nasm -MT "$(basename $<).o $<" -M $< > $@
@@ -40,5 +41,5 @@ stage1_OBJS = $(addsuffix .o,$(addprefix build/stage1/,$(basename $(stage1_SRCS)
 
 $(stage1_OBJS): build/stage0/potato_stage0
 
-build/stage1/potato_stage1: $(stage1_OBJS)
+build/stage1/potato_stage1: $(stage1_OBJS) build/stage0/potato_stage0
 	ld -m elf_i386 $^ -o'$@'
