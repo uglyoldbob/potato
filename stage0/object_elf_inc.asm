@@ -1,7 +1,8 @@
 extern elf32_object_create
 extern elf32_object_destroy
 extern elf_write_header
+extern elf_write_shtable
 extern elf_setup_header
 extern elf_header_size
 extern elf_create_elf_sh32
-extern elf_create_elf_sh32_list
+extern elf_setup_elf_sh32_list

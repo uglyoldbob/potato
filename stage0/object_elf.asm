@@ -126,34 +126,66 @@ elf_setup_header:
 global elf_write_header
 elf_write_header:
 	push eax
-	lea eax, [eax+elf32_object.header]
 	push ebx
 	push ecx
+	lea ebx, [ebx+elf32_object.header]
 	mov ecx, elfheader32_size
-	call file_put_data
-	pop eax
-	push eax
-	mov ebx, padding1
-	mov ecx, 64-elfheader32_size
 	call file_put_data
 	pop ecx
 	pop ebx
 	pop eax
+	push ecx
+	push ebx
+	push eax
+	mov ebx, padding1
+	mov ecx, 64-elfheader32_size
+	call file_put_data
+	pop eax
+	pop ebx
+	pop ecx
+	ret
+
+elf_test:
+	xchg eax, ebx
+	call file_put_data
+	ret
+
+;eax is fd
+;ebx is the elf32_object address
+global elf_write_shtable
+elf_write_shtable:
+	push ecx
+	push ebx
+	xchg eax, ebx
+	lea eax, [eax+elf32_object.shtable]
+	mov ecx, elf_sh32_size
+	push dword elf_test
+	call array_iterate
+	pop ebx
+	pop ebx
+	pop ecx
 	ret
 
 global elf_create_elf_sh32
 elf_create_elf_sh32:
-	push eax
 	mov eax, elf_sh32_size
 	call memory_alloc
-	mov ebx, eax
+	push eax
+	push edi
+	push ecx
+	mov edi, eax
+	mov eax, 0
+	mov ecx, elf_sh32_size
+	rep stosb
+	pop ecx
+	pop edi
 	pop eax
-	
 	ret
 
-global elf_create_elf_sh32_list
-elf_create_elf_sh32_list:
-	call array_create
+global elf_setup_elf_sh32_list
+elf_setup_elf_sh32_list:
+	lea eax, [eax+elf32_object.shtable]
+	call array_setup
 	mov ebx, eax
 	call elf_create_elf_sh32
 	xchg eax, ebx

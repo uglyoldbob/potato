@@ -22,6 +22,7 @@ array_setup:
 	add eax, 4*10
 	call memory_alloc
 	mov [ebx+array.elements],eax
+	mov eax, ebx
 	pop ebx
 	ret
 
@@ -56,7 +57,10 @@ array_increase:
 	xchg eax, ebx
 	mov ecx, 0
 .copy_element:
-	mov edx, [eax+array.elements+ecx*4]
+	push eax
+	mov eax, [eax+array.elements]
+	mov edx, [eax+ecx*4]
+	pop eax
 	mov [ebx+array.elements+ecx*4], edx
 	inc ecx
 	cmp ecx, [eax+array.capacity]
@@ -76,6 +80,7 @@ array_decrease:
 ;ebx is the value to append
 global array_append_item
 array_append_item:
+	push eax
 	push ecx
 	mov ecx, [eax+array.count]
 	cmp ecx, [eax+array.capacity]
@@ -83,9 +88,11 @@ array_append_item:
 .resize:
 	call array_increase
 .not_resize:
-	mov [eax+array.elements+ecx*4], ebx
 	inc dword [eax+array.count]
+	mov eax, [eax+array.elements]
+	mov [eax+ecx*4], ebx
 	pop ecx
+	pop eax
 	ret
 
 ;eax is the array
@@ -95,7 +102,11 @@ array_item_exists:
 	push ecx
 	mov ecx, 0
 .process_item:
-	cmp ebx, [eax+array.elements+ecx*4]
+	;todo fix this
+	push eax
+	mov eax, [eax+array.elements]
+	cmp ebx, [eax+ecx*4]
+	pop eax
 	je .match
 	inc ecx
 	cmp ecx, [eax+array.count]
@@ -106,5 +117,31 @@ array_item_exists:
 	ret
 .match:
 	mov eax, 1
+	pop ecx
+	ret
+
+;eax is the array
+;first argument on stack is the function to call
+;all other registers remain the same for the function call
+;the function to call is called for every element of the array, with eax being the element
+global array_iterate
+array_iterate:
+	;esp+4 contains the function address
+	push ecx
+	mov ecx, 0
+.more_elements:
+	push eax
+	mov eax, [eax+array.elements]
+	mov eax, [eax+ecx*4]
+	push ecx
+	mov ecx, [esp+8]
+	pushad
+	call [esp+48]
+	popad
+	pop ecx
+	pop eax
+	inc ecx
+	cmp ecx, [eax+array.count]
+	jb .more_elements
 	pop ecx
 	ret

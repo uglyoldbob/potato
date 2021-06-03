@@ -19,8 +19,7 @@ source_struct: resb OPTIONS_SIZE
 filename: resd 1
 objectname: resd 1
 objecthandle: resd 1
-
-elf32_object: resd 1
+elf32object: resd 1
 
 section .text
 global _start
@@ -74,12 +73,16 @@ _start:
 	mov [objecthandle], eax
 
 	call elf32_object_create
-	mov [elf32_object], eax
+	mov [elf32object], eax
 
 	call elf_setup_header
+	call elf_setup_elf_sh32_list
 	mov eax, [objecthandle]
-	mov ebx, [elf32_object]
+	mov ebx, [elf32object]
+.testme:
 	call elf_write_header
+.lab:
+	call elf_write_shtable
 
 	mov eax, [objecthandle]
 	call file_sync
@@ -87,7 +90,7 @@ _start:
 	mov eax, [objecthandle]
 	call file_close
 
-	mov eax, [elf32_object]
+	mov eax, [elf32object]
 	call elf32_object_destroy
 
 .done:
