@@ -41,5 +41,5 @@ stage1_OBJS = $(addsuffix .o,$(addprefix build/stage1/,$(basename $(stage1_SRCS)
 
 $(stage1_OBJS): build/stage0/potato_stage0
 
-build/stage1/potato_stage1: $(stage1_OBJS) build/stage0/potato_stage0
+build/stage1/potato_stage1: $(stage1_OBJS)
 	ld -m elf_i386 $^ -o'$@'
