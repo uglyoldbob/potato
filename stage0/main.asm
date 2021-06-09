@@ -77,6 +77,7 @@ _start:
 
 	call elf_setup_header
 	call elf_setup_elf_sh32_list
+	call elf_update_sh
 	mov eax, [objecthandle]
 	mov ebx, [elf32object]
 .testme:

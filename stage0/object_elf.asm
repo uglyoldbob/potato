@@ -166,6 +166,18 @@ elf_write_shtable:
 	pop ecx
 	ret
 
+;eax is the elf32_object
+;this function updates the entries in the header with the data from the elf_sh32_list
+global elf_update_sh
+elf_update_sh:
+	push ebx
+	mov ebx, eax
+	lea eax, [eax+elf32_object.shtable]
+	call array_get_count
+	mov [ebx+elf32_object.header+elfheader32.shnum], eax
+	pop ebx
+	ret
+
 global elf_create_elf_sh32
 elf_create_elf_sh32:
 	mov eax, elf_sh32_size
@@ -184,10 +196,45 @@ elf_create_elf_sh32:
 
 global elf_setup_elf_sh32_list
 elf_setup_elf_sh32_list:
+	push eax
+	mov word [eax+elf32_object.header+elfheader32.shstrindx], 1
 	lea eax, [eax+elf32_object.shtable]
+	push eax
 	call array_setup
+
+	;section 0 is special
 	mov ebx, eax
 	call elf_create_elf_sh32
 	xchg eax, ebx
 	call array_append_item
+	mov dword [ebx+elf_sh32.name], 0
+	mov dword [ebx+elf_sh32.type], 0
+	mov dword [ebx+elf_sh32.flags], 0
+	mov dword [ebx+elf_sh32.addr], 0
+	mov dword [ebx+elf_sh32.offset], 0
+	mov dword [ebx+elf_sh32.size], 0
+	mov dword [ebx+elf_sh32.link], 0
+	mov dword [ebx+elf_sh32.info], 0
+	mov dword [ebx+elf_sh32.addralign], 0
+	mov dword [ebx+elf_sh32.entsize], 0
+	pop eax
+
+	;section 1 is the string table
+	push eax
+	mov ebx, eax
+	call elf_create_elf_sh32
+	xchg eax, ebx
+	call array_append_item
+	mov dword [ebx+elf_sh32.name], 0
+	mov dword [ebx+elf_sh32.type], 3
+	mov dword [ebx+elf_sh32.flags], 0
+	mov dword [ebx+elf_sh32.addr], 0
+	mov dword [ebx+elf_sh32.offset], 50
+	mov dword [ebx+elf_sh32.size], 6
+	mov dword [ebx+elf_sh32.link], 0
+	mov dword [ebx+elf_sh32.info], 0
+	mov dword [ebx+elf_sh32.addralign], 0
+	mov dword [ebx+elf_sh32.entsize], 0
+	pop eax
+	pop eax
 	ret

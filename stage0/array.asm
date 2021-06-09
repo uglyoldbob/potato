@@ -11,6 +11,11 @@ array_size_get:
 	mov eax, array_size
 	ret
 
+global array_get_count
+array_get_count:
+	mov eax, [eax+array.count]
+	ret
+
 ;setup an array that exists somewhere
 global array_setup
 array_setup:
