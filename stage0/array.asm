@@ -231,7 +231,7 @@ byte_array_append_null_terminated:
 	jmp .copy_byte
 .check_null:
 	mov eax, [esp+8]
-	add [eax+array.count], ecx
+	add [eax+array.count], edx
 	pop ecx
 	cmp ecx, 1
 	jne .no_null

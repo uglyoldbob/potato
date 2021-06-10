@@ -69,6 +69,7 @@ endstruc
 section .data
 padding1: times 64-elfheader32_size db 0
 null_string: db 0
+test_string: db 'test string.', 0
 
 section .text
 
@@ -206,6 +207,9 @@ elf_setup_elf_sh32_list:
 	mov ebx, null_string
 	mov ecx, 1
 	call byte_array_append_null_terminated
+	mov ebx, test_string
+	call byte_array_append_null_terminated
+.zz:
 	pop ecx
 	pop ebx
 	
