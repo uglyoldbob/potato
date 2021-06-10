@@ -63,10 +63,12 @@ endstruc
 struc elf32_object
 .header: resb elfheader32_size
 .shtable: resb ARRAY_SIZE
+.strings: resb ARRAY_SIZE
 endstruc
 
 section .data
 padding1: times 64-elfheader32_size db 0
+null_string: db 0
 
 section .text
 
@@ -197,6 +199,18 @@ elf_create_elf_sh32:
 global elf_setup_elf_sh32_list
 elf_setup_elf_sh32_list:
 	push eax
+	lea eax, [eax+elf32_object.strings]
+	call byte_array_setup
+	push ebx
+	push ecx
+	mov ebx, null_string
+	mov ecx, 1
+	call byte_array_append_null_terminated
+	pop ecx
+	pop ebx
+	
+	pop eax
+	push eax
 	mov word [eax+elf32_object.header+elfheader32.shstrindx], 1
 	lea eax, [eax+elf32_object.shtable]
 	push eax
@@ -229,7 +243,7 @@ elf_setup_elf_sh32_list:
 	mov dword [ebx+elf_sh32.type], 3
 	mov dword [ebx+elf_sh32.flags], 0
 	mov dword [ebx+elf_sh32.addr], 0
-	mov dword [ebx+elf_sh32.offset], 50
+	mov dword [ebx+elf_sh32.offset], 144
 	mov dword [ebx+elf_sh32.size], 6
 	mov dword [ebx+elf_sh32.link], 0
 	mov dword [ebx+elf_sh32.info], 0
@@ -237,4 +251,12 @@ elf_setup_elf_sh32_list:
 	mov dword [ebx+elf_sh32.entsize], 0
 	pop eax
 	pop eax
+	ret
+
+;eax is the elf32_object
+;ebx is the elf_sh32 entry
+;ecx is the section name string, null terminated
+;edx is the section contents
+global elf_add_section
+elf_add_section:
 	ret

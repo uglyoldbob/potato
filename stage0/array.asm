@@ -1,10 +1,15 @@
 %include 'memory_inc.asm'
+%include 'string_funcs_inc.asm'
 
+;an array struc holds a number of dword sized objects
+;it will typically hold dynamically allocated elements
 struc array
 .count: resd 1	;the number of elements currently stored
 .capacity: resd 1 ;the max number of elements the array can currently store
 .elements: resd 1 ;the location of the elements
 endstruc
+
+;code below is for the dword array structure (element size is 4 bytes)
 
 global array_size_get
 array_size_get:
@@ -148,5 +153,118 @@ array_iterate:
 	inc ecx
 	cmp ecx, [eax+array.count]
 	jb .more_elements
+	pop ecx
+	ret
+
+;code below is for the byte array structure (element size is 1 byte)
+
+global byte_array_size_get
+byte_array_size_get:
+	jmp array_size_get
+
+global byte_array_get_count
+byte_array_get_count:
+	jmp array_get_count
+
+;setup an array that exists somewhere
+global byte_array_setup
+byte_array_setup:
+	push ebx
+	mov ebx, eax
+	mov dword [ebx+array.count], 0
+	mov dword [ebx+array.capacity],10
+	mov eax, array_size
+	add eax, 10
+	call memory_alloc
+	mov [ebx+array.elements],eax
+	mov eax, ebx
+	pop ebx
+	ret
+
+;eax is the array object
+global byte_array_takedown
+byte_array_takedown:
+	push ebx
+	mov ebx, eax
+	lea eax, [ebx+array.elements]
+	call memory_unalloc
+	pop ebx
+	ret
+
+;appends a chunk of data that is null terminated
+;eax is the array
+;ebx is the pointer to the data
+;ecx specifies if the null terminator should be included
+global byte_array_append_null_terminated
+byte_array_append_null_terminated:
+	push edx
+	push eax
+	push ebx
+	push ecx
+	xchg eax, ebx
+	call slen
+	mov edx, eax
+.check_size:
+	mov ecx, [ebx+array.capacity]
+	sub ecx, [ebx+array.count]
+	cmp ecx, edx
+	jae .large_enough
+	mov eax, ebx
+	push eax
+	call byte_array_increase
+	pop eax
+	jmp .check_size
+.large_enough:
+	mov ecx, eax ;ecx is number of bytes to copy
+	mov eax, [esp+8] ;eax is the array object
+	mov ebx, [eax+array.elements]
+	add ebx, [eax+array.count]
+	mov eax, ebx
+	mov ebx, [esp+4]
+.copy_byte:
+	cmp byte [ebx], 0
+	jz .check_null
+	mov cl, [ebx]
+	mov [eax], cl
+	inc ebx
+	inc eax
+	jmp .copy_byte
+.check_null:
+	mov eax, [esp+8]
+	add [eax+array.count], ecx
+	pop ecx
+	cmp ecx, 1
+	jne .no_null
+	mov ebx, [eax+array.elements]
+	add ebx, [eax+array.count]
+	mov byte [ebx], 0
+	inc dword [eax+array.count]
+.no_null:
+	pop ebx
+	pop eax
+	pop edx
+	ret
+
+byte_array_increase:
+	push ecx
+	push ebx
+	mov ebx, [eax+array.capacity]
+	shl ebx, 1
+	xchg eax, ebx
+	call memory_alloc
+	xchg eax, ebx
+	mov ecx, 0
+.copy_element:
+	push eax
+	mov eax, [eax+array.elements]
+	mov dl, [eax+ecx]
+	pop eax
+	mov [ebx+array.elements+ecx], dl
+	inc ecx
+	cmp ecx, [eax+array.capacity]
+	jb .copy_element
+	call memory_unalloc
+	mov eax, ebx
+	pop ebx
 	pop ecx
 	ret
