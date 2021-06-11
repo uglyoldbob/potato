@@ -80,10 +80,11 @@ _start:
 	call elf_update_sh
 	mov eax, [objecthandle]
 	mov ebx, [elf32object]
-.testme:
 	call elf_write_header
-.lab:
 	call elf_write_shtable
+	;TODO eax is not handle anymore right here, figure this out
+.lab:
+	call elf_write_strings
 
 	mov eax, [objecthandle]
 	call file_sync

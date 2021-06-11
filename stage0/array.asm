@@ -56,6 +56,7 @@ array_destroy:
 	pop ebx
 	ret
 
+;TODO fix this like byte array increase was fixed
 global array_increase
 array_increase:
 	push ecx
@@ -221,6 +222,7 @@ byte_array_append_null_terminated:
 	add ebx, [eax+array.count]
 	mov eax, ebx
 	mov ebx, [esp+4]
+	push edx
 .copy_byte:
 	cmp byte [ebx], 0
 	jz .check_null
@@ -230,6 +232,7 @@ byte_array_append_null_terminated:
 	inc eax
 	jmp .copy_byte
 .check_null:
+	pop edx
 	mov eax, [esp+8]
 	add [eax+array.count], edx
 	pop ecx
@@ -248,23 +251,38 @@ byte_array_append_null_terminated:
 byte_array_increase:
 	push ecx
 	push ebx
+	push edx
 	mov ebx, [eax+array.capacity]
 	shl ebx, 1
 	xchg eax, ebx
 	call memory_alloc
 	xchg eax, ebx
+	;eax is the array object again
+	;ebx is the new element
+	push ebx
+	mov ebx, [eax+array.capacity]
+	shl ebx, 1
+	mov [eax+array.capacity], ebx
+	pop ebx
 	mov ecx, 0
 .copy_element:
+	mov dl, [eax+array.elements+ecx]
+	mov [ebx+ecx], dl
+	inc ecx
+	cmp ecx, [eax+array.count]
+	jb .copy_element
 	push eax
 	mov eax, [eax+array.elements]
-	mov dl, [eax+ecx]
-	pop eax
-	mov [ebx+array.elements+ecx], dl
-	inc ecx
-	cmp ecx, [eax+array.capacity]
-	jb .copy_element
 	call memory_unalloc
-	mov eax, ebx
+	pop eax
+	mov [eax+array.elements], ebx
+	pop edx
 	pop ebx
 	pop ecx
+	ret
+
+global byte_array_get_data_ptr_and_count
+byte_array_get_data_ptr_and_count:
+	mov ebx, [eax+array.count]
+	mov eax, [eax+array.elements]
 	ret

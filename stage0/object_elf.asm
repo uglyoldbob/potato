@@ -169,6 +169,26 @@ elf_write_shtable:
 	pop ecx
 	ret
 
+;eax is fd
+;ebx is the elf32_object address
+global elf_write_strings
+elf_write_strings:
+	push eax
+	push ebx
+	push ecx
+	lea ebx, [ebx+elf32_object.strings]
+	push eax
+	mov eax, ebx
+	call byte_array_get_data_ptr_and_count
+	mov ecx, ebx
+	mov ebx, eax
+	pop eax
+	call file_put_data
+	pop ecx
+	pop ebx
+	pop eax
+	ret
+
 ;eax is the elf32_object
 ;this function updates the entries in the header with the data from the elf_sh32_list
 global elf_update_sh

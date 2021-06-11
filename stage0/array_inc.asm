@@ -13,3 +13,4 @@ BYTE_ARRAY_SIZE equ 12
 extern byte_array_setup
 extern byte_array_takedown
 extern byte_array_append_null_terminated
+extern byte_array_get_data_ptr_and_count
