@@ -157,6 +157,7 @@ elf_test:
 ;ebx is the elf32_object address
 global elf_write_shtable
 elf_write_shtable:
+	push eax
 	push ecx
 	push ebx
 	xchg eax, ebx
@@ -167,6 +168,7 @@ elf_write_shtable:
 	pop ebx
 	pop ebx
 	pop ecx
+	pop eax
 	ret
 
 ;eax is fd

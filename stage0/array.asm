@@ -265,12 +265,16 @@ byte_array_increase:
 	mov [eax+array.capacity], ebx
 	pop ebx
 	mov ecx, 0
+	mov edx, [eax+array.count]
+	push eax
+	mov eax, [eax+array.elements]
 .copy_element:
-	mov dl, [eax+array.elements+ecx]
+	mov dl, [eax+ecx]
 	mov [ebx+ecx], dl
 	inc ecx
-	cmp ecx, [eax+array.count]
+	cmp ecx, edx
 	jb .copy_element
+	pop eax
 	push eax
 	mov eax, [eax+array.elements]
 	call memory_unalloc
