@@ -193,13 +193,33 @@ elf_write_strings:
 
 ;eax is the elf32_object
 ;this function updates the entries in the header with the data from the elf_sh32_list
+;updates the string section
 global elf_update_sh
 elf_update_sh:
 	push ebx
+	push eax
 	mov ebx, eax
 	lea eax, [eax+elf32_object.shtable]
 	call array_get_count
 	mov [ebx+elf32_object.header+elfheader32.shnum], eax
+	pop eax
+	push eax
+	lea ebx, [eax+elf32_object.strings]
+	xchg eax, ebx
+	;ebx is the elf32_object
+	;eax is the strings array
+	call byte_array_get_count
+	xchg eax, ebx
+	;ebx is strings length
+	;eax is elf32_object
+	lea eax, [eax+elf32_object.shtable]
+	push ebx
+	mov ebx, 1
+	call array_get_element
+	pop ebx
+	mov eax, [eax]
+	mov [eax+elf_sh32.size], ebx
+	pop eax
 	pop ebx
 	ret
 

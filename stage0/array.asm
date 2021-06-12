@@ -21,6 +21,14 @@ array_get_count:
 	mov eax, [eax+array.count]
 	ret
 
+;eax is the array object
+;ebx is the index
+global array_get_element
+array_get_element:
+	mov eax, [eax+array.elements]
+	lea eax, [eax+ebx*4]
+	ret
+
 ;setup an array that exists somewhere
 global array_setup
 array_setup:
@@ -56,28 +64,40 @@ array_destroy:
 	pop ebx
 	ret
 
-;TODO fix this like byte array increase was fixed
 global array_increase
 array_increase:
 	push ecx
 	push ebx
+	push edx
 	mov ebx, [eax+array.capacity]
 	shl ebx, 1
 	xchg eax, ebx
 	call memory_alloc
 	xchg eax, ebx
+	;eax is the array object again
+	;ebx is the new element
+	push ebx
+	mov ebx, [eax+array.capacity]
+	shl ebx, 1
+	mov [eax+array.capacity], ebx
+	pop ebx
 	mov ecx, 0
-.copy_element:
+	mov edx, [eax+array.count]
 	push eax
 	mov eax, [eax+array.elements]
+.copy_element:
 	mov edx, [eax+ecx*4]
-	pop eax
-	mov [ebx+array.elements+ecx*4], edx
+	mov [ebx+ecx*4], edx
 	inc ecx
-	cmp ecx, [eax+array.capacity]
+	cmp ecx, edx
 	jb .copy_element
+	pop eax
+	push eax
+	mov eax, [eax+array.elements]
 	call memory_unalloc
-	mov eax, ebx	
+	pop eax
+	mov [eax+array.elements], ebx
+	pop edx
 	pop ebx
 	pop ecx
 	ret
