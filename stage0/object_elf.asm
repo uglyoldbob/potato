@@ -196,12 +196,14 @@ elf_write_strings:
 ;updates the string section
 global elf_update_sh
 elf_update_sh:
+	push ecx
 	push ebx
 	push eax
 	mov ebx, eax
 	lea eax, [eax+elf32_object.shtable]
 	call array_get_count
 	mov [ebx+elf32_object.header+elfheader32.shnum], eax
+	mov ecx, eax ;store the number of section header entries
 	pop eax
 	push eax
 	lea ebx, [eax+elf32_object.strings]
@@ -218,9 +220,21 @@ elf_update_sh:
 	call array_get_element
 	pop ebx
 	mov eax, [eax]
+	;eax is the elf_sh32 object
+	push edx
+	xchg eax, ecx
+	mov edx, elf_sh32_size
+	mul edx
+	xchg eax, ecx
+	pop edx
+	;ecx is the size
+.test:
 	mov [eax+elf_sh32.size], ebx
+	mov [eax+elf_sh32.offset], ecx
+	add dword [eax+elf_sh32.offset], 64
 	pop eax
 	pop ebx
+	pop ecx
 	ret
 
 global elf_create_elf_sh32
@@ -251,7 +265,6 @@ elf_setup_elf_sh32_list:
 	call byte_array_append_null_terminated
 	mov ebx, test_string
 	call byte_array_append_null_terminated
-.zz:
 	pop ecx
 	pop ebx
 	
@@ -300,9 +313,17 @@ elf_setup_elf_sh32_list:
 	ret
 
 ;eax is the elf32_object
-;ebx is the elf_sh32 entry
-;ecx is the section name string, null terminated
-;edx is the section contents
-global elf_add_section
-elf_add_section:
+;ebx is the section name string, null terminated
+global elf_create_section
+elf_create_section:
+	push ebx
+	push eax
+	call elf_create_elf_sh32
+	;todo put in the string name into the strings table, inert string index number
+	mov ebx, eax
+	pop eax
+	lea eax, [eax+elf32_object.shtable]
+	call array_append_item
+	call array_get_count
+	pop ebx
 	ret

@@ -77,13 +77,13 @@ _start:
 
 	call elf_setup_header
 	call elf_setup_elf_sh32_list
+	call elf_create_section
+	mov eax, [elf32object]
 	call elf_update_sh
 	mov eax, [objecthandle]
 	mov ebx, [elf32object]
 	call elf_write_header
 	call elf_write_shtable
-	;TODO eax is not handle anymore right here, figure this out
-.lab:
 	call elf_write_strings
 
 	mov eax, [objecthandle]

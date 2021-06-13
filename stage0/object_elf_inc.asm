@@ -7,5 +7,5 @@ extern elf_header_size
 extern elf_create_elf_sh32
 extern elf_setup_elf_sh32_list
 extern elf_update_sh
-extern elf_add_section
 extern elf_write_strings
+extern elf_create_section
