@@ -86,8 +86,10 @@ array_increase:
 	push eax
 	mov eax, [eax+array.elements]
 .copy_element:
+	push edx
 	mov edx, [eax+ecx*4]
 	mov [ebx+ecx*4], edx
+	pop edx
 	inc ecx
 	cmp ecx, edx
 	jb .copy_element
@@ -289,12 +291,15 @@ byte_array_increase:
 	push eax
 	mov eax, [eax+array.elements]
 .copy_element:
+	push edx
 	mov dl, [eax+ecx]
 	mov [ebx+ecx], dl
+	pop edx
 	inc ecx
 	cmp ecx, edx
 	jb .copy_element
 	pop eax
+.done:
 	push eax
 	mov eax, [eax+array.elements]
 	call memory_unalloc

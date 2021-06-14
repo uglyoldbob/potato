@@ -40,6 +40,15 @@ struc elf_sh32
 .entsize: resd 1
 endstruc
 
+;this structure contains two function pointers and a regular pointer
+;size takes a pointer (eax) to whatever and returns the number of bytes of data in ebx
+;.write takes fd(eax), data (ebx) and writes all of the contents to the file descriptor
+struc elf_sh32_printer
+.dat: resd 1
+.size: resd 1
+.write: resd 1
+endstruc
+
 struc elf_sym
 .name: resd 1
 .value: resd 1
@@ -63,6 +72,7 @@ endstruc
 struc elf32_object
 .header: resb elfheader32_size
 .shtable: resb ARRAY_SIZE
+.shtable_funcs: resb ARRAY_SIZE ;an array of elf_sh32_printer objects
 .strings: resb ARRAY_SIZE
 endstruc
 
@@ -78,6 +88,8 @@ global elf32_object_create
 elf32_object_create:
 	mov eax, elf32_object_size
 	call memory_alloc
+	call elf_setup_header
+	call elf_setup_elf_sh32_list
 	ret
 
 global elf32_object_destroy
@@ -196,45 +208,70 @@ elf_write_strings:
 ;updates the string section
 global elf_update_sh
 elf_update_sh:
+	push edx
 	push ecx
 	push ebx
 	push eax
+	sub esp, 12
+	;todo, fix stack things
+	mov [esp], eax ;store the elf32_object
 	mov ebx, eax
 	lea eax, [eax+elf32_object.shtable]
 	call array_get_count
 	mov [ebx+elf32_object.header+elfheader32.shnum], eax
 	mov ecx, eax ;store the number of section header entries
-	pop eax
-	push eax
-	lea ebx, [eax+elf32_object.strings]
-	xchg eax, ebx
-	;ebx is the elf32_object
+	mov eax, [esp]
+	lea eax, [eax+elf32_object.strings]
 	;eax is the strings array
 	call byte_array_get_count
-	xchg eax, ebx
+	mov ebx, eax
 	;ebx is strings length
-	;eax is elf32_object
+	mov eax, [esp]
 	lea eax, [eax+elf32_object.shtable]
-	push ebx
 	mov ebx, 1
 	call array_get_element
-	pop ebx
 	mov eax, [eax]
 	;eax is the elf_sh32 object
-	push edx
 	xchg eax, ecx
 	mov edx, elf_sh32_size
 	mul edx
 	xchg eax, ecx
-	pop edx
 	;ecx is the size
-.test:
 	mov [eax+elf_sh32.size], ebx
 	mov [eax+elf_sh32.offset], ecx
 	add dword [eax+elf_sh32.offset], 64
+	mov eax, [esp]
+	lea eax, [eax+elf32_object.shtable]
+	mov [esp+4], eax ;the section header table array
+	call array_get_count
+	mov [esp+8], eax
+	mov ecx, 2
+	sub dword [esp+8], 2
+.check_sh:
+	mov eax, [esp+8]
+	cmp eax, 0
+	je .done
+.more_sections:
+	mov eax, [esp+4]
+	mov ebx, ecx
+	call array_get_element
+	mov eax, [eax]
+	mov edx, eax ;edx is the current section header
+	mov eax, [esp]
+	lea eax, [eax+elf32_object.shtable_funcs]
+	call array_get_element
+	mov ebx, eax ;ebx is the entry for this sections functions (elf_sh32_printer)
+;	call [ebx+elf_sh32_printer.size]
+	mov [ebx+elf_sh32.size], eax
+	inc ecx
+	dec dword [esp+8]
+	jmp .check_sh
+.done:
+	add esp, 12
 	pop eax
 	pop ebx
 	pop ecx
+	pop edx
 	ret
 
 global elf_create_elf_sh32
@@ -255,6 +292,7 @@ elf_create_elf_sh32:
 
 global elf_setup_elf_sh32_list
 elf_setup_elf_sh32_list:
+	push ebx
 	push eax
 	lea eax, [eax+elf32_object.strings]
 	call byte_array_setup
@@ -267,9 +305,14 @@ elf_setup_elf_sh32_list:
 	call byte_array_append_null_terminated
 	pop ecx
 	pop ebx
-	
+
 	pop eax
 	push eax
+	mov ebx, eax
+	lea eax, [ebx+elf32_object.shtable_funcs]
+	call array_setup
+
+	mov eax, ebx
 	mov word [eax+elf32_object.header+elfheader32.shstrindx], 1
 	lea eax, [eax+elf32_object.shtable]
 	push eax
@@ -310,20 +353,41 @@ elf_setup_elf_sh32_list:
 	mov dword [ebx+elf_sh32.entsize], 0
 	pop eax
 	pop eax
+	pop ebx
 	ret
 
 ;eax is the elf32_object
 ;ebx is the section name string, null terminated
 global elf_create_section
 elf_create_section:
+	push ecx
 	push ebx
 	push eax
+	sub esp, 16
+	mov [esp], eax
+	mov [esp+4], ebx
 	call elf_create_elf_sh32
-	;todo put in the string name into the strings table, inert string index number
-	mov ebx, eax
-	pop eax
+	mov [esp+8], eax
+	mov eax, [esp]
+	lea eax, [eax+elf32_object.strings]
+	call byte_array_get_count
+	mov [esp+12], eax
+	mov eax, [esp]
+	lea eax, [eax+elf32_object.strings]
+	mov ebx, [esp+4]
+	mov ecx, 1
+	call byte_array_append_null_terminated
+	mov ecx, [esp+12]
+	mov eax, [esp+8]
+	mov [eax+elf_sh32.name], ecx
+
+	mov ebx, [esp+8]
+	mov eax, [esp]
 	lea eax, [eax+elf32_object.shtable]
 	call array_append_item
 	call array_get_count
+	add esp, 16
+	pop eax
 	pop ebx
+	pop ecx
 	ret
