@@ -13,7 +13,7 @@ msg_usage db 'Usage: <stage0> <filename> <output>', 0ah
 	  db 0
 arg_index db 0 ;the index number of the argument being parsed
 number_arguments dd 0
-section_name db '.section_name!', 0
+section_name db 'section_nam?', 0
 
 section .bss
 source_struct: resb OPTIONS_SIZE

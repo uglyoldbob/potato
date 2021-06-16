@@ -76,6 +76,9 @@ struc elf32_object
 .strings: resb ARRAY_SIZE
 endstruc
 
+STRING_TABLE_SECTION EQU 1
+SYMBOL_TABLE_SECTION EQU 2
+
 section .data
 padding1: times 64-elfheader32_size db 0
 null_string: db 0
@@ -218,7 +221,7 @@ elf_update_sh:
 	mov ebx, eax
 	lea eax, [eax+elf32_object.shtable]
 	call array_get_count
-	mov [ebx+elf32_object.header+elfheader32.shnum], eax
+	mov [ebx+elf32_object.header+elfheader32.shnum], ax
 	mov ecx, eax ;store the number of section header entries
 	mov eax, [esp]
 	lea eax, [eax+elf32_object.strings]
@@ -245,6 +248,25 @@ elf_update_sh:
 	mov [esp+4], eax ;the section header table array
 	call array_get_count
 	mov [esp+8], eax
+	mov eax, [esp]
+	lea eax, [eax+elf32_object.strings]
+	call byte_array_get_count
+	mov [esp+12], eax ;length of all strings
+	
+	mov eax, [esp+4]
+	mov ebx, 1
+	call array_get_element
+	mov eax, [eax]
+	mov ebx, [esp+12]
+	mov [eax+elf_sh32.size], ebx
+	
+	mov eax, [esp+8]
+	mov edx, elf_sh32_size
+	
+	mul edx
+	add eax, 64
+	add [esp+12], eax
+
 	mov ecx, 2
 	sub dword [esp+8], 2
 .check_sh:
@@ -262,9 +284,13 @@ elf_update_sh:
 	call array_get_element
 	mov ebx, eax ;ebx is the entry for this sections functions (elf_sh32_printer)
 ;	call [ebx+elf_sh32_printer.size]
-	mov [ebx+elf_sh32.size], eax
+	mov eax, 140
+	mov [edx+elf_sh32.size], eax
+	mov eax, [esp+12]
+	mov [edx+elf_sh32.offset], eax
 	inc ecx
 	dec dword [esp+8]
+.done_modding:
 	jmp .check_sh
 .done:
 	add esp, 12
@@ -380,6 +406,20 @@ elf_create_section:
 	mov ecx, [esp+12]
 	mov eax, [esp+8]
 	mov [eax+elf_sh32.name], ecx
+	;setup section as code section. 
+	;TODO move to a function
+	mov ebx, 1
+	mov [eax+elf_sh32.type], ebx
+	mov ebx, 1
+	mov [eax+elf_sh32.link], ebx
+	mov ebx, 19
+	mov [eax+elf_sh32.info], ebx
+	mov ebx, 6
+	mov [eax+elf_sh32.flags], ebx
+	mov ebx, 0
+	mov [eax+elf_sh32.addr], ebx
+	mov ebx, 0
+	mov [eax+elf_sh32.addralign], ebx
 
 	mov ebx, [esp+8]
 	mov eax, [esp]
