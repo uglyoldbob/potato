@@ -318,22 +318,21 @@ elf_create_elf_sh32:
 
 global elf_setup_elf_sh32_list
 elf_setup_elf_sh32_list:
+	push ecx
 	push ebx
 	push eax
+	sub esp, 12
+	mov [esp], eax
 	lea eax, [eax+elf32_object.strings]
 	call byte_array_setup
-	push ebx
-	push ecx
+
 	mov ebx, null_string
 	mov ecx, 1
 	call byte_array_append_null_terminated
 	mov ebx, test_string
 	call byte_array_append_null_terminated
-	pop ecx
-	pop ebx
-
-	pop eax
-	push eax
+	
+	mov eax, [esp]
 	mov ebx, eax
 	lea eax, [ebx+elf32_object.shtable_funcs]
 	call array_setup
@@ -341,8 +340,9 @@ elf_setup_elf_sh32_list:
 	mov eax, ebx
 	mov word [eax+elf32_object.header+elfheader32.shstrindx], 1
 	lea eax, [eax+elf32_object.shtable]
-	push eax
+	mov [esp+4], eax
 	call array_setup
+	mov [esp+8], eax
 
 	;section 0 is special
 	mov ebx, eax
@@ -359,10 +359,8 @@ elf_setup_elf_sh32_list:
 	mov dword [ebx+elf_sh32.info], 0
 	mov dword [ebx+elf_sh32.addralign], 0
 	mov dword [ebx+elf_sh32.entsize], 0
-	pop eax
 
 	;section 1 is the string table
-	push eax
 	mov ebx, eax
 	call elf_create_elf_sh32
 	xchg eax, ebx
@@ -377,10 +375,8 @@ elf_setup_elf_sh32_list:
 	mov dword [ebx+elf_sh32.info], 0
 	mov dword [ebx+elf_sh32.addralign], 0
 	mov dword [ebx+elf_sh32.entsize], 0
-	pop eax
 
 	;section 2 is the symbol table
-	push eax
 	mov ebx, eax
 	call elf_create_elf_sh32
 	xchg eax, ebx
@@ -390,16 +386,16 @@ elf_setup_elf_sh32_list:
 	mov dword [ebx+elf_sh32.flags], 0
 	mov dword [ebx+elf_sh32.addr], 0
 	mov dword [ebx+elf_sh32.offset], 6 ;will be filled out later
-	mov dword [ebx+elf_sh32.size], 48
+	mov dword [ebx+elf_sh32.size], 64
 	mov dword [ebx+elf_sh32.link], 2
 	mov dword [ebx+elf_sh32.info], 0
 	mov dword [ebx+elf_sh32.addralign], 4
 	mov dword [ebx+elf_sh32.entsize], elf_sym_size
-	pop eax
 
-
+	add esp, 12
 	pop eax
 	pop ebx
+	pop ecx
 	ret
 
 ;eax is the elf32_object
@@ -438,7 +434,7 @@ elf_create_section:
 	mov [eax+elf_sh32.flags], ebx
 	mov ebx, 0
 	mov [eax+elf_sh32.addr], ebx
-	mov ebx, 0
+	mov ebx, 16
 	mov [eax+elf_sh32.addralign], ebx
 
 	mov ebx, [esp+8]
