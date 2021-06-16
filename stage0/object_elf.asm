@@ -53,9 +53,9 @@ struc elf_sym
 .name: resd 1
 .value: resd 1
 .size: resd 1
-.info: resd 1
-.other: resd 1
-.index: resd 1
+.info: resb 1
+.other: resb 1
+.index: resw 1
 endstruc
 
 struc elf_rel
@@ -285,9 +285,9 @@ elf_update_sh:
 	mov ebx, eax ;ebx is the entry for this sections functions (elf_sh32_printer)
 ;	call [ebx+elf_sh32_printer.size]
 	mov eax, 140
-	mov [edx+elf_sh32.size], eax
+	;mov [edx+elf_sh32.size], eax
 	mov eax, [esp+12]
-	mov [edx+elf_sh32.offset], eax
+	;mov [edx+elf_sh32.offset], eax
 	inc ecx
 	dec dword [esp+8]
 .done_modding:
@@ -378,6 +378,26 @@ elf_setup_elf_sh32_list:
 	mov dword [ebx+elf_sh32.addralign], 0
 	mov dword [ebx+elf_sh32.entsize], 0
 	pop eax
+
+	;section 2 is the symbol table
+	push eax
+	mov ebx, eax
+	call elf_create_elf_sh32
+	xchg eax, ebx
+	call array_append_item
+	mov dword [ebx+elf_sh32.name], 1
+	mov dword [ebx+elf_sh32.type], 2
+	mov dword [ebx+elf_sh32.flags], 0
+	mov dword [ebx+elf_sh32.addr], 0
+	mov dword [ebx+elf_sh32.offset], 6 ;will be filled out later
+	mov dword [ebx+elf_sh32.size], 48
+	mov dword [ebx+elf_sh32.link], 2
+	mov dword [ebx+elf_sh32.info], 0
+	mov dword [ebx+elf_sh32.addralign], 4
+	mov dword [ebx+elf_sh32.entsize], elf_sym_size
+	pop eax
+
+
 	pop eax
 	pop ebx
 	ret
