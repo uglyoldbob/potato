@@ -196,6 +196,8 @@ mem_use_block:
 	pop ecx
 	ret
 .use_partial_block:
+	cmp ecx, ALLOC_SIZE_ALIGN+memblock_size
+	jb .use_entire_block
 	sub ecx, ALLOC_SIZE_ALIGN+memblock_size
 	cmp ecx, ebx
 	jb .use_entire_block

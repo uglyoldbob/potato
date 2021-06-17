@@ -343,11 +343,13 @@ elf_setup_elf_sh32_list:
 	mov [esp+4], eax
 	call array_setup
 	mov [esp+8], eax
-
+.check:
 	;section 0 is special
-	mov ebx, eax
 	call elf_create_elf_sh32
-	xchg eax, ebx
+	mov ebx, eax
+	call elf_create_funcs_element
+	mov ecx, eax
+	mov eax, [esp+4]
 	call array_append_item
 	mov dword [ebx+elf_sh32.name], 0
 	mov dword [ebx+elf_sh32.type], 0
@@ -361,9 +363,9 @@ elf_setup_elf_sh32_list:
 	mov dword [ebx+elf_sh32.entsize], 0
 
 	;section 1 is the string table
-	mov ebx, eax
 	call elf_create_elf_sh32
-	xchg eax, ebx
+	mov ebx, eax
+	mov eax, [esp+4]
 	call array_append_item
 	mov dword [ebx+elf_sh32.name], 0
 	mov dword [ebx+elf_sh32.type], 3
@@ -377,9 +379,9 @@ elf_setup_elf_sh32_list:
 	mov dword [ebx+elf_sh32.entsize], 0
 
 	;section 2 is the symbol table
-	mov ebx, eax
 	call elf_create_elf_sh32
-	xchg eax, ebx
+	mov ebx, eax
+	mov eax, [esp+4]
 	call array_append_item
 	mov dword [ebx+elf_sh32.name], 1
 	mov dword [ebx+elf_sh32.type], 2
@@ -446,4 +448,13 @@ elf_create_section:
 	pop eax
 	pop ebx
 	pop ecx
+	ret
+
+elf_create_funcs_element:
+	mov eax, elf_sh32_printer_size
+	call memory_alloc
+.d:
+	mov dword [eax+elf_sh32_printer.dat], 0
+	mov dword [eax+elf_sh32_printer.size], 0
+	mov dword [eax+elf_sh32_printer.write], 0
 	ret
