@@ -84,6 +84,7 @@ _start:
 	call elf_write_header
 	call elf_write_shtable
 	call elf_write_strings
+	call elf_write_the_rest
 
 	mov eax, [objecthandle]
 	call file_sync

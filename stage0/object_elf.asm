@@ -206,6 +206,53 @@ elf_write_strings:
 	pop eax
 	ret
 
+;eax is fd
+;ebx is the elf32_object address
+global elf_write_the_rest
+elf_write_the_rest:
+	push eax
+	push ebx
+	push ecx
+	sub esp, 16
+	mov [esp], ebx
+	mov [esp+16], eax
+	lea eax, [ebx+elf32_object.shtable]
+	mov [esp+4], eax ;the section header table array
+	call array_get_count
+	mov [esp+8], eax
+
+	mov ecx, 2
+	sub dword [esp+8], 2
+.check_sh:
+	mov eax, [esp+8]
+	cmp eax, 0
+	je .done
+.more_sections:
+	mov eax, [esp+4]
+	mov ebx, ecx
+	call array_get_element
+	mov eax, [eax]
+	mov edx, eax ;edx is the current section header
+	mov eax, [esp]
+	lea eax, [eax+elf32_object.shtable_funcs]
+.examine:
+	call array_get_element
+	mov ebx, [eax] ;ebx is the entry for this sections functions (elf_sh32_printer)
+	cmp dword [ebx+elf_sh32_printer.write], 0
+	jz .no_write_func
+	mov eax, [esp+16]
+	call [ebx+elf_sh32_printer.write]
+.no_write_func:
+	inc ecx
+	dec dword [esp+8]
+	jmp .check_sh
+.done:
+	add esp, 16
+	pop ecx
+	pop ebx
+	pop eax
+	ret
+
 ;eax is the elf32_object
 ;this function updates the entries in the header with the data from the elf_sh32_list
 ;updates the string section
@@ -216,7 +263,7 @@ elf_update_sh:
 	push ebx
 	push eax
 	sub esp, 12
-	;todo, fix stack things
+
 	mov [esp], eax ;store the elf32_object
 	mov ebx, eax
 	lea eax, [eax+elf32_object.shtable]
@@ -281,16 +328,18 @@ elf_update_sh:
 	mov edx, eax ;edx is the current section header
 	mov eax, [esp]
 	lea eax, [eax+elf32_object.shtable_funcs]
+.examine:
 	call array_get_element
-	mov ebx, eax ;ebx is the entry for this sections functions (elf_sh32_printer)
-;	call [ebx+elf_sh32_printer.size]
-	mov eax, 140
-	;mov [edx+elf_sh32.size], eax
+	mov ebx, [eax] ;ebx is the entry for this sections functions (elf_sh32_printer)
+	cmp dword [ebx+elf_sh32_printer.size], 0
+	jz .no_size_func
+	call [ebx+elf_sh32_printer.size]
+	mov [edx+elf_sh32.size], eax
+.no_size_func:
 	mov eax, [esp+12]
 	;mov [edx+elf_sh32.offset], eax
 	inc ecx
 	dec dword [esp+8]
-.done_modding:
 	jmp .check_sh
 .done:
 	add esp, 12
@@ -314,6 +363,9 @@ elf_create_elf_sh32:
 	pop ecx
 	pop edi
 	pop eax
+	ret
+
+elf_write_test1:
 	ret
 
 global elf_setup_elf_sh32_list
@@ -343,12 +395,18 @@ elf_setup_elf_sh32_list:
 	mov [esp+4], eax
 	call array_setup
 	mov [esp+8], eax
-.check:
+
 	;section 0 is special
-	call elf_create_elf_sh32
-	mov ebx, eax
 	call elf_create_funcs_element
 	mov ecx, eax
+	mov eax, [esp]
+	lea eax, [eax+elf32_object.shtable_funcs]
+	mov ebx, ecx
+	call array_append_item
+
+	mov eax, [esp+4]
+	call elf_create_elf_sh32
+	mov ebx, eax
 	mov eax, [esp+4]
 	call array_append_item
 	mov dword [ebx+elf_sh32.name], 0
@@ -363,6 +421,14 @@ elf_setup_elf_sh32_list:
 	mov dword [ebx+elf_sh32.entsize], 0
 
 	;section 1 is the string table
+	call elf_create_funcs_element
+	mov ecx, eax
+	mov eax, [esp]
+	lea eax, [eax+elf32_object.shtable_funcs]
+	mov ebx, ecx
+	call array_append_item
+
+	mov eax, [esp+4]
 	call elf_create_elf_sh32
 	mov ebx, eax
 	mov eax, [esp+4]
@@ -379,6 +445,16 @@ elf_setup_elf_sh32_list:
 	mov dword [ebx+elf_sh32.entsize], 0
 
 	;section 2 is the symbol table
+	call elf_create_funcs_element
+	mov ecx, eax
+	mov dword [ecx+elf_sh32_printer.dat], 2 ;todo put in a real address here
+	mov dword [ecx+elf_sh32_printer.write], elf_write_test1
+	mov eax, [esp]
+	lea eax, [eax+elf32_object.shtable_funcs]
+	mov ebx, ecx
+	call array_append_item
+
+	mov eax, [esp+4]
 	call elf_create_elf_sh32
 	mov ebx, eax
 	mov eax, [esp+4]
@@ -439,6 +515,13 @@ elf_create_section:
 	mov ebx, 16
 	mov [eax+elf_sh32.addralign], ebx
 
+	call elf_create_funcs_element
+	mov ecx, eax
+	mov eax, [esp]
+	lea eax, [eax+elf32_object.shtable_funcs]
+	mov ebx, ecx
+	call array_append_item
+
 	mov ebx, [esp+8]
 	mov eax, [esp]
 	lea eax, [eax+elf32_object.shtable]
@@ -453,7 +536,6 @@ elf_create_section:
 elf_create_funcs_element:
 	mov eax, elf_sh32_printer_size
 	call memory_alloc
-.d:
 	mov dword [eax+elf_sh32_printer.dat], 0
 	mov dword [eax+elf_sh32_printer.size], 0
 	mov dword [eax+elf_sh32_printer.write], 0
