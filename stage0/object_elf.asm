@@ -2,6 +2,10 @@
 %include 'file_inc.asm'
 %include 'memory_inc.asm'
 
+;to examine the sections directly
+;hd build/stage1/main.o -s 4 -e '5/4 " %08.8X" "\n"'
+;section headers start at offset 0x40
+
 struc elfheader32
 .ident: resb 4
 .ident_class: resb 1
@@ -262,72 +266,56 @@ elf_update_sh:
 	push ecx
 	push ebx
 	push eax
-	sub esp, 12
+	sub esp, 20
+;esp = the elf32_object
+;esp+4 = elf32_object.shtable
+;esp+8 = number of sections
+;esp+12 = length of all strings?
+;esp+16 = current calculated file offset
+;esp+20 = counter
 
 	mov [esp], eax ;store the elf32_object
 	mov ebx, eax
 	lea eax, [eax+elf32_object.shtable]
 	call array_get_count
 	mov [ebx+elf32_object.header+elfheader32.shnum], ax
-	mov ecx, eax ;store the number of section header entries
-	mov eax, [esp]
-	lea eax, [eax+elf32_object.strings]
-	;eax is the strings array
-	call byte_array_get_count
-	mov ebx, eax
-	;ebx is strings length
-	mov eax, [esp]
-	lea eax, [eax+elf32_object.shtable]
-	mov ebx, 1
-	call array_get_element
-	mov eax, [eax]
-	;eax is the elf_sh32 object
-	xchg eax, ecx
-	mov edx, elf_sh32_size
-	mul edx
-	xchg eax, ecx
-	;ecx is the size
-	mov [eax+elf_sh32.size], ebx
-	mov [eax+elf_sh32.offset], ecx
-	add dword [eax+elf_sh32.offset], 64
-	mov eax, [esp]
-	lea eax, [eax+elf32_object.shtable]
-	mov [esp+4], eax ;the section header table array
-	call array_get_count
 	mov [esp+8], eax
-	mov eax, [esp]
-	lea eax, [eax+elf32_object.strings]
-	call byte_array_get_count
-	mov [esp+12], eax ;length of all strings
-	
-	mov eax, [esp+4]
-	mov ebx, 1
-	call array_get_element
-	mov eax, [eax]
-	mov ebx, [esp+12]
-	mov [eax+elf_sh32.size], ebx
-	
-	mov eax, [esp+8]
-	mov edx, elf_sh32_size
-	
-	mul edx
-	add eax, 64
-	add [esp+12], eax
+	mov ebx, elf_sh32_size
+	imul eax, ebx
+	mov dword [esp+16], eax
+	add dword [esp+16], 64
 
-	mov ecx, 2
-	sub dword [esp+8], 2
+;start checking sections
+;section 0 is special
+	mov dword [esp+20], 1
 .check_sh:
 	mov eax, [esp+8]
-	cmp eax, 0
+	cmp eax, [esp+20]
 	je .done
 .more_sections:
-	mov eax, [esp+4]
-	mov ebx, ecx
+;todo: check to see if this is a string section, update main header if it is
+;todo: check to see if this is a symbol table, update main header if it is
+	mov eax, [esp]
+	lea eax, [eax+elf32_object.shtable]
+	mov ebx, [esp+20]
 	call array_get_element
 	mov eax, [eax]
 	mov edx, eax ;edx is the current section header
+
+;check for string table
+	cmp dword [edx+elf_sh32.type], 3
+	jne .not_strings
+	mov eax, [esp]
+	cmp word [eax+elf32_object.header+elfheader32.shstrindx], 0
+	jnz .not_strings
+	;the first string table is assumed to be for section names
+	mov ebx, [esp+20]
+	mov [eax+elf32_object.header+elfheader32.shstrindx], bx
+.not_strings:
+
 	mov eax, [esp]
 	lea eax, [eax+elf32_object.shtable_funcs]
+	mov ebx, [esp+20]
 .examine:
 	call array_get_element
 	mov ebx, [eax] ;ebx is the entry for this sections functions (elf_sh32_printer)
@@ -335,14 +323,17 @@ elf_update_sh:
 	jz .no_size_func
 	call [ebx+elf_sh32_printer.size]
 	mov [edx+elf_sh32.size], eax
+	jmp .after_size
 .no_size_func:
-	mov eax, [esp+12]
-	;mov [edx+elf_sh32.offset], eax
-	inc ecx
-	dec dword [esp+8]
+	mov eax, [edx+elf_sh32.size]	;assume size is prepopulated
+.after_size:
+	mov ecx, [esp+16]
+	mov [edx+elf_sh32.offset], ecx
+	add [esp+16], eax	;add section size to current offset
+	inc dword [esp+20]
 	jmp .check_sh
 .done:
-	add esp, 12
+	add esp, 20
 	pop eax
 	pop ebx
 	pop ecx
@@ -368,6 +359,16 @@ elf_create_elf_sh32:
 elf_write_test1:
 	ret
 
+elf_write_test2:
+	mov eax, 48
+	ret
+
+elf_string_size:
+	mov eax, [eax]
+	mov eax, [eax+elf_sh32_printer.dat]
+	call byte_array_get_count
+	ret
+
 global elf_setup_elf_sh32_list
 elf_setup_elf_sh32_list:
 	push ecx
@@ -390,7 +391,7 @@ elf_setup_elf_sh32_list:
 	call array_setup
 
 	mov eax, ebx
-	mov word [eax+elf32_object.header+elfheader32.shstrindx], 1
+	mov word [eax+elf32_object.header+elfheader32.shstrindx], 0
 	lea eax, [eax+elf32_object.shtable]
 	mov [esp+4], eax
 	call array_setup
@@ -423,6 +424,10 @@ elf_setup_elf_sh32_list:
 	;section 1 is the string table
 	call elf_create_funcs_element
 	mov ecx, eax
+	mov ebx, [esp]
+	lea ebx, [ebx+elf32_object.strings]
+	mov [ecx+elf_sh32_printer.dat], ebx
+	mov dword [ecx+elf_sh32_printer.size], elf_string_size
 	mov eax, [esp]
 	lea eax, [eax+elf32_object.shtable_funcs]
 	mov ebx, ecx
@@ -437,8 +442,8 @@ elf_setup_elf_sh32_list:
 	mov dword [ebx+elf_sh32.type], 3
 	mov dword [ebx+elf_sh32.flags], 0
 	mov dword [ebx+elf_sh32.addr], 0
-	mov dword [ebx+elf_sh32.offset], 144
-	mov dword [ebx+elf_sh32.size], 6
+	mov dword [ebx+elf_sh32.offset], 0
+	mov dword [ebx+elf_sh32.size], 0
 	mov dword [ebx+elf_sh32.link], 0
 	mov dword [ebx+elf_sh32.info], 0
 	mov dword [ebx+elf_sh32.addralign], 0
@@ -449,6 +454,7 @@ elf_setup_elf_sh32_list:
 	mov ecx, eax
 	mov dword [ecx+elf_sh32_printer.dat], 2 ;todo put in a real address here
 	mov dword [ecx+elf_sh32_printer.write], elf_write_test1
+	mov dword [ecx+elf_sh32_printer.size], elf_write_test2
 	mov eax, [esp]
 	lea eax, [eax+elf32_object.shtable_funcs]
 	mov ebx, ecx
@@ -463,8 +469,8 @@ elf_setup_elf_sh32_list:
 	mov dword [ebx+elf_sh32.type], 2
 	mov dword [ebx+elf_sh32.flags], 0
 	mov dword [ebx+elf_sh32.addr], 0
-	mov dword [ebx+elf_sh32.offset], 6 ;will be filled out later
-	mov dword [ebx+elf_sh32.size], 64
+	mov dword [ebx+elf_sh32.offset], 0
+	mov dword [ebx+elf_sh32.size], 0
 	mov dword [ebx+elf_sh32.link], 2
 	mov dword [ebx+elf_sh32.info], 0
 	mov dword [ebx+elf_sh32.addralign], 4
