@@ -10,3 +10,8 @@ extern elf_update_sh
 extern elf_write_strings
 extern elf_create_section
 extern elf_write_the_rest
+extern elf_register_symbol
+extern elf_symbol_set_value
+extern elf_symbol_set_size
+extern elf_symbol_set_info
+extern elf_symbol_set_index

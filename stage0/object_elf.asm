@@ -191,7 +191,7 @@ elf_write_shtable:
 	ret
 
 ;eax is fd
-;ebx is the address of the byte array
+;ebx is the address of the elf_sh32_printer object
 global elf_write_strings
 elf_write_strings:
 	push eax
@@ -356,11 +356,34 @@ elf_create_elf_sh32:
 	pop eax
 	ret
 
-elf_write_test1:
+elf_individual_symbol_write:
+	xchg eax, ebx
+	call file_put_data
 	ret
 
-elf_write_test2:
-	mov eax, 48
+;eax is fd
+;ebx is the address of the elf_sh32_printer object
+elf_symbols_write:
+	push ebx
+	push ecx
+	mov ebx, [ebx+elf_sh32_printer.dat]
+	xchg eax, ebx
+	mov ecx, elf_sym_size
+	push elf_individual_symbol_write
+	call array_iterate
+	add esp, 4
+	pop ecx
+	pop ebx
+	ret
+
+elf_symbols_size:
+	push ebx
+	mov eax, [eax]
+	mov eax, [eax+elf_sh32_printer.dat]
+	call byte_array_get_count
+	mov ebx, elf_sym_size
+	imul eax, ebx
+	pop ebx
 	ret
 
 elf_string_size:
@@ -453,9 +476,10 @@ elf_setup_elf_sh32_list:
 	;section 2 is the symbol table
 	call elf_create_funcs_element
 	mov ecx, eax
-	mov dword [ecx+elf_sh32_printer.dat], 2 ;todo put in a real address here
-	mov dword [ecx+elf_sh32_printer.write], elf_write_test1
-	mov dword [ecx+elf_sh32_printer.size], elf_write_test2
+	call array_create
+	mov dword [ecx+elf_sh32_printer.dat], eax ;todo put in a real address here
+	mov dword [ecx+elf_sh32_printer.write], elf_symbols_write
+	mov dword [ecx+elf_sh32_printer.size], elf_symbols_size
 	mov eax, [esp]
 	lea eax, [eax+elf32_object.shtable_funcs]
 	mov ebx, ecx
@@ -539,6 +563,88 @@ elf_create_section:
 	pop ebx
 	pop ecx
 	ret
+
+;eax is the elf32_object
+;ebx is the symbol name, null terminated, null for no name
+;return is the address of the elf_sym
+global elf_register_symbol
+elf_register_symbol:
+	push ecx
+	push ebx
+	sub esp, 12
+	mov [esp], eax
+	mov [esp+8], ebx
+;create the symbol object
+	mov eax, elf_sym_size
+	call memory_alloc
+	mov [esp+4], eax
+;append it to the symbol table list
+	mov eax, [esp]
+	lea eax, [eax+elf32_object.shtable_funcs]
+	mov ebx, SYMBOL_TABLE_SECTION
+	call array_get_element
+	mov eax, [eax]
+	mov eax, [eax+elf_sh32_printer.dat]
+	mov ebx, [esp+4]
+	call array_append_item
+;check for a string name
+	cmp dword [esp+8], 0
+	je .no_string
+;TODO make the symbol table name actually work
+	mov eax, [esp]
+
+	mov eax, [esp]
+	lea eax, [eax+elf32_object.strings]
+	call byte_array_get_count
+	mov ebx, eax
+	mov eax, [esp+4]
+	mov [eax+elf_sym.name], ebx
+
+	mov eax, [esp]
+	lea eax, [eax+elf32_object.strings]
+	mov ebx, [esp+8]
+	mov ecx, 1
+	call byte_array_append_null_terminated
+
+	jmp .done_string
+.no_string:
+	mov ebx, 0
+	mov eax, [esp+4]
+	mov [eax+elf_sym.name], ebx
+.done_string:
+	mov ebx, 0
+	mov eax, [esp+4]
+	mov [eax+elf_sym.value], ebx
+	mov [eax+elf_sym.size], ebx
+	mov [eax+elf_sym.info], bl
+	mov [eax+elf_sym.other], bl
+	mov [eax+elf_sym.index], bx
+	add esp, 12
+	pop ebx
+	pop ecx
+	ret
+
+global elf_symbol_set_value
+elf_symbol_set_value:
+	mov [eax+elf_sym.value], ebx
+	ret
+
+global elf_symbol_set_size
+elf_symbol_set_size:
+	mov [eax+elf_sym.size], ebx
+	ret
+
+global elf_symbol_set_info
+elf_symbol_set_info:
+	mov [eax+elf_sym.info], bl
+	ret
+
+global elf_symbol_set_index
+elf_symbol_set_index:
+	mov [eax+elf_sym.index], bx
+	ret
+
+
 
 elf_create_funcs_element:
 	mov eax, elf_sh32_printer_size

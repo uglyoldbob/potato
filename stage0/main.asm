@@ -14,6 +14,7 @@ msg_usage db 'Usage: <stage0> <filename> <output>', 0ah
 arg_index db 0 ;the index number of the argument being parsed
 number_arguments dd 0
 section_name db 'section_nam?', 0
+sym_name db 'testsymbol', 0
 
 section .bss
 source_struct: resb OPTIONS_SIZE
@@ -77,6 +78,17 @@ _start:
 	mov [elf32object], eax
 	mov ebx, section_name
 	call elf_create_section
+	mov ebx, 0
+	call elf_register_symbol
+
+	mov eax, [elf32object]
+	mov ebx, sym_name
+	call elf_register_symbol
+	mov ebx, 2
+	call elf_symbol_set_index
+	mov ebx, 0abcdefh
+	call elf_symbol_set_value
+
 	mov eax, [elf32object]
 	call elf_update_sh
 	mov eax, [objecthandle]
