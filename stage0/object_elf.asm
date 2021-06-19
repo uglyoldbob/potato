@@ -78,6 +78,7 @@ struc elf32_object
 .shtable: resb ARRAY_SIZE
 .shtable_funcs: resb ARRAY_SIZE ;an array of elf_sh32_printer objects
 .strings: resb ARRAY_SIZE
+.sym_strings: resb ARRAY_SIZE
 endstruc
 
 STRING_TABLE_SECTION EQU 1
@@ -399,15 +400,23 @@ elf_setup_elf_sh32_list:
 	push eax
 	sub esp, 12
 	mov [esp], eax
+	;setup string table
 	lea eax, [eax+elf32_object.strings]
 	call byte_array_setup
-
 	mov ebx, null_string
 	mov ecx, 1
 	call byte_array_append_null_terminated
 	mov ebx, test_string
 	call byte_array_append_null_terminated
 	
+	;setup symbol string table
+	mov eax, [esp]
+	lea eax, [eax+elf32_object.sym_strings]
+	call byte_array_setup
+	mov ebx, null_string
+	mov ecx, 1
+	call byte_array_append_null_terminated
+
 	mov eax, [esp]
 	mov ebx, eax
 	lea eax, [ebx+elf32_object.shtable_funcs]
@@ -496,8 +505,8 @@ elf_setup_elf_sh32_list:
 	mov dword [ebx+elf_sh32.addr], 0
 	mov dword [ebx+elf_sh32.offset], 0
 	mov dword [ebx+elf_sh32.size], 0
-	mov dword [ebx+elf_sh32.link], 2
-	mov dword [ebx+elf_sh32.info], 0
+	mov dword [ebx+elf_sh32.link], 1
+	mov dword [ebx+elf_sh32.info], 2
 	mov dword [ebx+elf_sh32.addralign], 4
 	mov dword [ebx+elf_sh32.entsize], elf_sym_size
 
@@ -507,8 +516,27 @@ elf_setup_elf_sh32_list:
 	pop ecx
 	ret
 
+global elf_configure_code_section
+elf_configure_code_section:
+	push ebx
+	mov ebx, 1
+	mov [eax+elf_sh32.type], ebx
+	mov ebx, 1
+	mov [eax+elf_sh32.link], ebx
+	mov ebx, 19
+	mov [eax+elf_sh32.info], ebx
+	mov ebx, 6
+	mov [eax+elf_sh32.flags], ebx
+	mov ebx, 0
+	mov [eax+elf_sh32.addr], ebx
+	mov ebx, 16
+	mov [eax+elf_sh32.addralign], ebx
+	pop ebx
+	ret
+
 ;eax is the elf32_object
 ;ebx is the section name string, null terminated
+;eax is returned as the new section header (elf_sh32 object)
 global elf_create_section
 elf_create_section:
 	push ecx
@@ -531,20 +559,6 @@ elf_create_section:
 	mov ecx, [esp+12]
 	mov eax, [esp+8]
 	mov [eax+elf_sh32.name], ecx
-	;setup section as code section. 
-	;TODO move to a function
-	mov ebx, 1
-	mov [eax+elf_sh32.type], ebx
-	mov ebx, 1
-	mov [eax+elf_sh32.link], ebx
-	mov ebx, 19
-	mov [eax+elf_sh32.info], ebx
-	mov ebx, 6
-	mov [eax+elf_sh32.flags], ebx
-	mov ebx, 0
-	mov [eax+elf_sh32.addr], ebx
-	mov ebx, 16
-	mov [eax+elf_sh32.addralign], ebx
 
 	call elf_create_funcs_element
 	mov ecx, eax
@@ -557,9 +571,9 @@ elf_create_section:
 	mov eax, [esp]
 	lea eax, [eax+elf32_object.shtable]
 	call array_append_item
-	call array_get_count
+	mov eax, [esp+8]
 	add esp, 16
-	pop eax
+	add esp, 4
 	pop ebx
 	pop ecx
 	ret
@@ -590,7 +604,6 @@ elf_register_symbol:
 ;check for a string name
 	cmp dword [esp+8], 0
 	je .no_string
-;TODO make the symbol table name actually work
 	mov eax, [esp]
 
 	mov eax, [esp]

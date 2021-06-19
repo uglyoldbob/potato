@@ -9,6 +9,7 @@ extern elf_setup_elf_sh32_list
 extern elf_update_sh
 extern elf_write_strings
 extern elf_create_section
+extern elf_configure_code_section
 extern elf_write_the_rest
 extern elf_register_symbol
 extern elf_symbol_set_value

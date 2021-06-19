@@ -78,6 +78,8 @@ _start:
 	mov [elf32object], eax
 	mov ebx, section_name
 	call elf_create_section
+	call elf_configure_code_section
+	mov eax, [elf32object]
 	mov ebx, 0
 	call elf_register_symbol
 
