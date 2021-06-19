@@ -191,14 +191,14 @@ elf_write_shtable:
 	ret
 
 ;eax is fd
-;ebx is the elf32_object address
+;ebx is the address of the byte array
 global elf_write_strings
 elf_write_strings:
 	push eax
 	push ebx
 	push ecx
-	lea ebx, [ebx+elf32_object.strings]
 	push eax
+	mov ebx, [ebx+elf_sh32_printer.dat]
 	mov eax, ebx
 	call byte_array_get_data_ptr_and_count
 	mov ecx, ebx
@@ -225,7 +225,7 @@ elf_write_the_rest:
 	call array_get_count
 	mov [esp+8], eax
 
-	mov ecx, 2
+	mov ecx, 1
 	sub dword [esp+8], 2
 .check_sh:
 	mov eax, [esp+8]
@@ -428,6 +428,7 @@ elf_setup_elf_sh32_list:
 	lea ebx, [ebx+elf32_object.strings]
 	mov [ecx+elf_sh32_printer.dat], ebx
 	mov dword [ecx+elf_sh32_printer.size], elf_string_size
+	mov dword [ecx+elf_sh32_printer.write], elf_write_strings
 	mov eax, [esp]
 	lea eax, [eax+elf32_object.shtable_funcs]
 	mov ebx, ecx

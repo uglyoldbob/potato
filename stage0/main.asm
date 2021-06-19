@@ -83,7 +83,6 @@ _start:
 	mov ebx, [elf32object]
 	call elf_write_header
 	call elf_write_shtable
-	call elf_write_strings
 	call elf_write_the_rest
 
 	mov eax, [objecthandle]
