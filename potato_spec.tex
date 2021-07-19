@@ -62,6 +62,12 @@ Some variables are specified by their minimum desired size. These variables may 
 \item f128min - A floating point variable that is at least 128 bits wide.
 \end{itemize}
 
+\subsection {Variable events}
+Variables can have events attached to them at compile time. The events can be paused and resumed.
+\begin{itemize}
+\item Value written - This event is triggered when the value of the variable is written. This will be triggered even if the value does not change. Writing a value to the variable twice will cause event to be triggered twice. If a value is written while the event is suspended, it will be triggered when the event is resumed. This event may be triggered even if the probability of the variable having been written is less than 100%, but more than 0% (ex: if suspended, and only one branch of execution writes to the variable).
+\end{itemize}
+
 \subsection{Variable features}
 
 Variables can include a variety of features that are either intrinsic to them or requested. These features will vary depending on the precise architecture that \progLangNameSpace is being compiled for.
@@ -78,13 +84,21 @@ Variables can include a variety of features that are either intrinsic to them or
 \item Device - Strong ordering is required for this variable with respect to other device variables.
 \end{itemize}
 
+\subsection {Global scope}
+Some variables are defined in the global scope. The access of a global variable cannot be changed.
+
+\subsection {Constants}
+Constants are propagated where possible during compilation.
+
 \subsection {Owner}
 
-Variables have a compile-time defined owner. This drives much of the compile time error checking implemented within the \progLangNameSpace language.
+Variables have a compile-time defined owner. This drives much of the compile time error checking implemented within the \progLangNameSpace language. Variables can be borrowed, returned to owner by the borrower, transferred to another owner, forgotten by the owner, and created by the owner.
 
-\subsection {Ordering blocks}
+\subsection {Containers}
+Container type variables can own other variables, but the container must eventually be owned by a function when the owner tree is parsed upwards. This must be able to be determined at compile time.
 
-Ordering blocks are defined, which define how instructions in a specific block of code should be ordered.
+\subsection {References}
+There can be references to other variables. They can be definitely valid, definitely invalid, and unknown. References can be generally dropped at any given time.
 
 \subsection {Custom types}
 
@@ -117,27 +131,7 @@ There are several classes of memory operations.
 The compiler may re-order instructions, as long as the ordering specified is not violated. 
 The compiler will take into account the re-ordering that the hardware may perform and do what it can to ensure proper
 ordering of instructions.
-
-
-\section{ Functions}
-
-Functions are a basic element of code. Functions have a return type, that is returned at the completion of the function. 
-The compiler shall not make attempts to preventing functions from entering infinite loops. 
-A non-halting function is not a guarantee of the \progLangNameSpace language. 
-Functions may declare that they are a halting or non-returning function.
-A function may be declared as non-reentrant. This allows it to do some things that other functions would not be allowed to do.
-This will typically only be for the entry function.
-
-\begin{itemize}
-\item A variable. A function can return a specific value of a variable.
-\item Variable address. A function can return the address of a variable.
-\item Nothing. A function can not return at all. This can be achieved by ending in an infinite loop.
-\end{itemize}
-
-\subsection {Interrupt context functions}
-
-Some functions are run directly by the underlying hardware as an interrupt handler. Interrupt context functions can only use other functions that are defined as interrupt context functions. These functions are limited in what they can do.
-
+Ordering blocks are used to instruct the compiler if re-ordering instructions can be done during compilation, or if re-ordering should be enforced or disallowed at run-time (typically done with memory barriers or other kinds of instruction barriers that the target processor supports).
 
 \section { Operations }
 Various operations can be performed on variables and with variables.
@@ -149,8 +143,9 @@ Various operations can be performed on variables and with variables.
 \item Assign - assign the value of one variable to another variable.
 \end{itemize}
 
-\section {Memory mapped IO addresses}
+\section {Memory mapped variables and IO addresses}
 
+All memory mapped variables (variables placed at specific addresses) are tracked in a memory mapped section to guarantee uniqueness of memory mapped variables. This prevents more than one function from claiming possession of the same memory mapped element.
 Memory mapped IO addresses can have a variety of interesting characteristics.
 
 \begin{itemize}
@@ -162,7 +157,7 @@ Memory mapped IO addresses can have a variety of interesting characteristics.
 
 \section {Variable type specifiers}
 
-Variables can have a variety of modifiers that determines access of the variable.
+Variables can have a variety of modifiers that determines access of the variable. This specifier is used in conjunction with access types (atomic, volatile, cache coherent).
 \begin {itemize}
 \item Const - The value will not change at all. Potentially everybody has read access to this value.
 \item Read-only - The holder of this value cannot change the value, but it might change.
@@ -174,7 +169,6 @@ Variables can have a variety of modifiers that determines access of the variable
 
 \section {User defined variables}
 The \progLangNameSpace language supports user defined variables.
-
 
 \subsection {structures}
 User defined structures contain zero or more variables. Padding elements may be inserted between elements as required to improve performance based on alignment. \progLangNameSpace provides a method for users to eliminate this padding between elements. Structures may also have an alignment requirement imposed on their initial storage address by the user.
@@ -198,38 +192,78 @@ Accessibility of member variables can be limited in access to code in unrelated 
 \item write - Write access can be granted to member variables.
 \end{itemize}
 
+\section{ Functions}
+
+Functions are a basic element of code. Functions have a return type, that is returned at the completion of the function. 
+The compiler shall not make attempts to preventing functions from entering infinite loops. 
+A non-halting function is not a guarantee of the \progLangNameSpace language. 
+Functions may declare that they are a halting or non-returning function.
+A function may be declared as non-reentrant. This allows it to do some things that other functions would not be allowed to do.
+This will typically only be for the entry function.
+
+\begin{itemize}
+\item A variable. A function can return a specific value of a variable.
+\item Variable address. A function can return the address of a variable.
+\item Nothing. A function can not return at all. This can be achieved by ending in an infinite loop.
+\end{itemize}
+
+\subsection {Interrupt context functions}
+
+Some functions are run directly by the underlying hardware as an interrupt handler. Interrupt context functions can only use other functions that are defined as interrupt context functions. These functions are limited in what they can do.
+
+
+\section {Entry}
+The entry function is an environment dependent function that varies depending on the environment. The entry point for a windows program will be different than the entry point for a program running directly on a microcontroller or microprocessor. The entry point for a windows program may be different than the entry point for a linux program.
+
+\section {Threads}
+The Potato language is a thread aware language.
+
 \section {Syntax}
 
 \subsection {Variable creation}
 
 Variables can be created in the global scope or in the scope of a function as a local variable.
 
-create \textless qualifier\textgreater  \space \textless type\textgreater \space named \textless name\textgreater;
+\begin{enumerate}
 
-create \textless qualifier\textgreater  \space \textless type\textgreater \space named \textless name1\textgreater , \textless name2\textgreater , \textless name3\textgreater;
 
-create \textless qualifier\textgreater  \space \textless type\textgreater \space named \textless name\textgreater with ( \textless values \textgreater );
+\item create \textless qualifier\textgreater  \space \textless type\textgreater \space named \textless name\textgreater;
 
-create \textless qualifier\textgreater  \space \textless type\textgreater \space named \textless name1\textgreater \space  with ( \textless values \textgreater ), \textless name2\textgreater \space  with ( \textless values \textgreater ), \textless name3\textgreater \space  with ( \textless values \textgreater );
+\item create \textless qualifier\textgreater  \space \textless type\textgreater \space named \textless name1\textgreater , \textless name2\textgreater , \textless name3\textgreater;
 
-create \textless qualifier\textgreater \space \textless type\textgreater \space [ ] named \textless name\textgreater;
+\item create \textless qualifier\textgreater  \space \textless type\textgreater \space named \textless name\textgreater with ( \textless values \textgreater );
 
-create \textless qualifier\textgreater \space \textless type\textgreater \space [ ] named \textless name\textgreater [\textless number\textgreater] with [ ( \textless values \textgreater ) ];
+\item create \textless qualifier\textgreater  \space \textless type\textgreater \space named \textless name1\textgreater \space  with ( \textless values \textgreater ), \textless name2\textgreater \space  with ( \textless values \textgreater ), \textless name3\textgreater \space  with ( \textless values \textgreater );
 
-create \textless qualifier\textgreater \space \textless type\textgreater \space [ ] named \textless name1\textgreater [\textless number\textgreater] with [ ( \textless values \textgreater ) ], \textless name2\textgreater [\textless number\textgreater] with [ ( \textless values \textgreater ) ];
+\end{enumerate}
 
-create \textless qualifier\textgreater  \space \textless type\textgreater \space named \textless name\textgreater with ( \textless values \textgreater ) loaded from \textless section\textgreater;
+Arrays can be created with the following syntax:
 
-create \textless qualifier\textgreater  \space \textless type\textgreater \space named \textless name\textgreater with \textless value \textgreater;
+\begin{enumerate}
 
-create \textless qualifier\textgreater \space \textless type\textgreater \space [ ] named \textless name\textgreater [\textless number\textgreater] with [ ( \textless values \textgreater ) ] loaded from \textless section\textgreater;
+\item create \textless qualifier\textgreater \space \textless type\textgreater \space [ ] named \textless name\textgreater;
+
+\item create \textless qualifier\textgreater \space \textless type\textgreater \space [ ] named \textless name\textgreater [\textless number\textgreater] with [ ( \textless values \textgreater ) ];
+
+\item create \textless qualifier\textgreater \space \textless type\textgreater \space [ ] named \textless name1\textgreater [\textless number\textgreater] with [ ( \textless values \textgreater ) ], \textless name2\textgreater [\textless number\textgreater] with [ ( \textless values \textgreater ) ];
+
+\item create \textless qualifier\textgreater  \space \textless type\textgreater \space named \textless name\textgreater with ( \textless values \textgreater ) loaded from \textless section\textgreater;
+
+\item create \textless qualifier\textgreater  \space \textless type\textgreater \space named \textless name\textgreater with \textless value \textgreater;
+
+\item create \textless qualifier\textgreater \space \textless type\textgreater \space [ ] named \textless name\textgreater [\textless number\textgreater] with [ ( \textless values \textgreater ) ] loaded from \textless section\textgreater;
+\end{enumerate}
 
 \subsection {Function definitions}
-Functions are defined in the global scope.
+Functions are defined in the global scope. Functions are allowed to be marked as non-reentrant. This type of function is more limited in functionality but allows for some techniques that would not be allowed in regular functions like access to non-local variables.
 
-define function \textless name\textgreater (\textless arguments\textgreater) returns \textless qualifier\textgreater \space \textless type\textgreater \{ \textless stuff\textgreater \}
+\begin{enumerate}
 
-define method \textless name\textgreater \space for \textless qualifier\textgreater  \space \textless type\textgreater \space named  \textless name\textgreater \space  (\textless arguments\textgreater) returns \textless qualifier\textgreater \space \textless type\textgreater \{ \textless stuff\textgreater \}
+\item define function \textless name\textgreater (\textless arguments\textgreater) returns \textless qualifier\textgreater \space \textless type\textgreater \{ \textless stuff\textgreater \}
+
+\item define method \textless name\textgreater \space for \textless qualifier\textgreater  \space \textless type\textgreater \space named  \textless name\textgreater \space  (\textless arguments\textgreater) returns \textless qualifier\textgreater \space \textless type\textgreater \{ \textless stuff\textgreater \}
+
+\end{enumerate}
 
 \section {Compiler bootstrap}
 
@@ -242,9 +276,69 @@ to generate code that is useful for the stage 1 compiler.
 \subsection {Stage 1 compiler}
 The stage 1 compiler is written in a mix of assembly and potato.
 
+\subsection {Stage ? compiler}
+This compiler implements enough of the language to compile itself and is written entirely in potato.
+
+This is a list of commands for the compiler. These commands are command line arguments to the compiler. EX: potato example\_command some args here
+
+\begin{enumerate}
+\item bake target\_name - This compiles all objects required to make the specified target. all is a special target\_name that means compile everything.
+\item version - This prints the compiler version, environment details, and architecture information.
+\item help - This prints details on how to use the compiler.
+\end{enumerate}
+
 \section {Configuration file}
 Potato uses a configuration file to figure out what to do when invoked. 
 This is a toml configuration file called potato.toml.
+
+\subsection {Targets}
+Multiple targets can be specified in a [targets] section on the configuration file. Targets are specified by name, assigning a program name and environment and architecture pair.
+\begin {itemize}
+\item \textless tname \textgreater = \textless name\textgreater  on \textless environment\textgreater -\textless architecture\textgreater 
+\end{itemize}
+
+\subsection {Named programs}
+Named programs are the primary things that potato builds. The settings for each program are placed in a section with the name of the program.
+\begin{itemize}
+\item src = \textless name\textgreater , \textless name\textgreater  - Specify the names of the source files to use for compilation of this program. All source files should have relative paths with . being equal to the src folder.
+\item on-\textless environment\textgreater  = \textless arch1\textgreater , \textless arch2\textgreater  - Specify which architectures are supported for the given environment.
+\item on-* = \textless arch1\textgreater , \textless arch2\textgreater  - Specify that all environments are supported for the listed architectures.
+\item on-\textless environment\textgreater  = * - Specify that all architectures are supported for the given environment.
+\item on-* = * - Specifies that everything on everywhere is supported.
+\item version-on-\textless environment\textgreater -\textless architecture\textgreater  = \textless version\textgreater  - Specifies the version of the program for the given environment and architecture pair.
+\item object-\textless environment\textgreater -\textless architecture\textgreater  = \textless object type\textgreater  - Specifies what type of object to produce on the given environment and architecture pair. (EX: elf32, pe, macho, dll, a, etc)
+\item min-language-on-\textless environment\textgreater -\textless architecture\textgreater  - Specifies the minimum version of the potato language required for the given environment and architecture pair.
+\end{itemize}
+
+\section {Source files}
+The source files for potato are kept in a folder called src. This src folder exists in the same directory as the configuration file (potato.toml).
+
+\section {Enviroment}
+Potato is intended to run in a variety of environments.
+\begin{itemize}
+\item windows
+\item osx
+\item linux
+\item none
+\item etc
+\end{itemize}
+
+\section{Architecture}
+Potato is intended to be able to compile programs for a variety of architectures.
+\begin{itemize}
+\item x86
+\item x64
+\item powerpc
+\item cortex-m0+
+\item etc
+\end{itemize}
+
+\section {Standard library}
+Potato has a standard library of functions. Programs or libraries that elect to not use the standard library are called gluten-free. The standard library is implemented in the compiler due to the nature of standard libraries commonly using syscalls and other things that would not be directly possible in potato.
+
+\section {Documentation}
+Potato defines how documentation can be generated from source code during the build of a program. This is to be defined later.
+
 
 
 \end{document}
