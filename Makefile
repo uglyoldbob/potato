@@ -16,7 +16,6 @@ stage0_SRCS = \
 	memory.asm \
 	file.asm \
 	object_elf.asm \
-	potato.asm \
 	string_funcs.asm \
 	source_file.asm \
 	toml.asm
