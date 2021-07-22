@@ -1,1 +1,22 @@
-fhdjkahsjdkfhdjskasdjfh
+;this is an example file for testing parsing
+;language spec needs to clarify what <qualifier> means
+create sint32 named bob;
+create sint8 named george;
+create sint16 named joe5;
+create f16 named jim1, jim2, jim3, jim4;
+
+create sint32 named blab with (42);
+
+create sint64 named blob with (43), blob2 with (44), blob3 with (45);
+
+create sint64 named 
+	blob with (43), 
+	blob2 with (44), 
+	blob3 with (45);
+
+
+define function 
+	parse_potato_source_file (u8[] named data) 
+	returns nothing {
+	
+}

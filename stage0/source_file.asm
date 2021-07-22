@@ -15,6 +15,17 @@ section .text
 
 ;al is the byte, ebx
 process_source_file_byte:
+	sub esp, 20
+	cmp word [ebx+source_file.mode], 0
+	jne .not_mode0
+.mode0:
+	
+	jmp .done_mode
+.not_mode0:
+
+.done_mode:
+	
+	add esp,20
 	ret
 
 global process_source_file
