@@ -1,5 +1,7 @@
 section .text
 
+;eax is the name of the file
+;return eax is file handle
 global file_open
 file_open:
 	push ecx
@@ -12,6 +14,8 @@ file_open:
 	pop ecx
 	ret
 
+;eax is the name of the file
+;return eax is file handle
 global file_open_write
 file_open_write:
 	push edx
@@ -53,6 +57,8 @@ file_put_data:
 	pop edx
 	ret
 
+;eax = fd
+;return address of buffer
 global file_map
 file_map:
 	push ebx
@@ -81,6 +87,7 @@ file_map:
 	pop ebx
 	ret
 
+;eax is the address of the buffer
 global file_unmap
 file_unmap:
 	push ecx
@@ -93,6 +100,8 @@ file_unmap:
 	pop ecx
 	ret
 
+;eax is the file handle
+;return size in bytes (eax)
 global file_getsize
 file_getsize:
 	push ebx
@@ -108,6 +117,7 @@ file_getsize:
 	pop ebx
 	ret
 
+;eax is the file handle
 global file_close
 file_close:
 	push ebx

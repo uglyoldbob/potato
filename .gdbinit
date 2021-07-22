@@ -1,6 +1,9 @@
 disp /i $eip
 set args "stage1/main.p0" "build/stage1/main.o"
 set disassembly-flavor intel
+break process_source_file_byte
+disp /c $al
+disp /x $ebx
 
 define memory_region
  echo Memory regions:\n
