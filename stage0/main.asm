@@ -67,6 +67,7 @@ _start:
 	
 	mov eax, [filename]
 	mov ebx, source_struct
+	call setup_source_file
 	call process_source_file
 
 .write_output:

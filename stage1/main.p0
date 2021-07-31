@@ -5,14 +5,30 @@ create sint8 named george;
 create sint16 named joe5;
 create f16 named jim1, jim2, jim3, jim4;
 
+create sint32 named blab with 42;
 create sint32 named blab with (42);
 
 create sint64 named blob with (43), blob2 with (44), blob3 with (45);
+create sint64 named blob with 43, blob2 with 44, blob3 with 45;
 
 create sint64 named 
 	blob with (43), 
 	blob2 with (44), 
 	blob3 with (45);
+
+create sint64 named 
+	blob with 43, 
+	blob2 with 44, 
+	blob3 with 45;
+
+
+create uint8[] named salad;
+create uint8[] named salad2[5];
+create uint8[] named salad3[5] with [1,2,3,4,5];
+
+create uint8[] named salad3[5] with [1,2,3,4,5],
+	salad4[5] with [5,4,3,2,1];
+
 
 
 define function 

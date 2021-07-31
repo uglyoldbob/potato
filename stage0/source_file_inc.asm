@@ -1,1 +1,2 @@
 extern process_source_file
+extern setup_source_file
