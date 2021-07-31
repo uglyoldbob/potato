@@ -30,7 +30,7 @@ create uint8[] named salad3[5] with [1,2,3,4,5],
 	salad4[5] with [5,4,3,2,1];
 
 
-
+;lets make a function now
 define function 
 	parse_potato_source_file (u8[] named data) 
 	returns nothing {

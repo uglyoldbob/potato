@@ -73,9 +73,12 @@ handle_mode_plain:
 	and ah, 0feh
 	call is_whitespace
 	jnz .modeplain_1
+	cmp word [ebx+source_file.row], 1
+	ja .not_first_column
 	and ah, 0feh
 	call is_comment_start
 	jnz .modeplain_comment
+.not_first_column:
 	jmp .modeplain_unhandled
 .modeplain_1:	;whitespace
 	push eax
@@ -129,7 +132,6 @@ operate_row_column:
 process_source_file_byte:
 	push eax
 	sub esp, 20
-	call operate_row_column
 	cmp word [ebx+source_file.mode], source_mode.plain
 	je .mode_plain
 	cmp word [ebx+source_file.mode], source_mode.commenting
@@ -146,7 +148,7 @@ process_source_file_byte:
 	mov eax, print_x
 	call sprint
 .done_mode:
-	
+	call operate_row_column
 	add esp,20
 	pop eax
 	ret
