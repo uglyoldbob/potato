@@ -29,10 +29,40 @@ create uint8[] named salad3[5] with [1,2,3,4,5];
 create uint8[] named salad3[5] with [1,2,3,4,5],
 	salad4[5] with [5,4,3,2,1];
 
+;define a struct for a hash map
+define struct hash_map {
+	public {
+		define function 
+	}
+	private {
+		define u32 named num_things;
+		define u32 named hash_size;
+		define u32 named threshold;
+		define u8 named num_bits;
+	}
+}
+
+
+define struct source_file {
+	private {
+		u16 state;
+		u16 major_state;
+	}
+}
+
+define method for source_file init (source_file f) returns nothing {
+	f.state = 0;
+	f.major_state = 0;
+}
 
 ;lets make a function now
-define function 
-	parse_potato_source_file (u8[] named data) 
+define member for source_file  
+	parse_potato_source_file (source_file f, u8[] named data, u32 size) 
 	returns nothing {
-	
+	for (define u32 named i with 0; i < size; i++)
+	{
+		if (f.state == 0)
+		{
+		}
+	}
 }

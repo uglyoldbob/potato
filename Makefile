@@ -1,8 +1,17 @@
 
-all: build/stage0 build/stage1 build/stage0/potato_stage0 build/stage1/potato_stage1
+all: build/stage0b build/stage0 build/stage0b/potato_stage0 build/stage1 build/stage0/potato_stage0 build/stage1/potato_stage1
 
 clean:
 	rm -rf build
+
+build/stage0b/%.o: stage0.1/%.c
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $^ -o $@ -I./stage0.1
+
+build/stage0b/potato_stage0: build/stage0b/main.o
+	${LINK.o} $^ -o $@
+
+build/stage0b:
+	mkdir -p build/stage0b
 
 build/stage0:
 	mkdir -p build/stage0
@@ -35,7 +44,7 @@ stage1_SRCS = \
 	main.p0
 
 build/stage1/%.o: stage1/%.p0
-	build/stage0/potato_stage0 $< $@
+	build/stage0b/potato_stage0 $< $@
 
 stage1_OBJS = $(addsuffix .o,$(addprefix build/stage1/,$(basename $(stage1_SRCS))))
 
